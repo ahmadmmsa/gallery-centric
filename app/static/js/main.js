@@ -30,8 +30,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Handle HTMX load
   document.addEventListener('htmx:load', function(evt) {
-    // Reinitialize tooltips after HTMX content loads
-    const newTooltips = evt.detail.xhr.response.querySelectorAll('[data-bs-toggle="tooltip"]');
+    // Reinitialize tooltips after HTMX content loads.
+    // evt.detail.elt is the newly swapped-in element.
+    const root = evt.detail && evt.detail.elt;
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    const newTooltips = root.querySelectorAll('[data-bs-toggle="tooltip"]');
     newTooltips.forEach(el => {
       if (window.bootstrap && window.bootstrap.Tooltip) {
         new window.bootstrap.Tooltip(el);
@@ -84,24 +87,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
-
-// Lazy load images with Intersection Observer
-if ('IntersectionObserver' in window) {
-  const imageObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const img = entry.target;
-        img.src = img.dataset.src;
-        img.classList.remove('lazy-image');
-        imageObserver.unobserve(img);
-      }
-    });
-  });
-
-  document.querySelectorAll('img.lazy-image').forEach((img) => {
-    imageObserver.observe(img);
-  });
-}
 
 // Debounce function for search input
 function debounce(func, delay) {

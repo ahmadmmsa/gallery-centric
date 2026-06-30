@@ -15,10 +15,7 @@
     <!-- Search results grid -->
     <div class="col-lg-9">
       {% if galleries %}
-      {% include 'partials/gallery_grid.html' %}
-
-      <!-- Pagination -->
-      {% include 'partials/pagination.html' %}
+      {% include 'partials/gallery_results.html' %}
       {% else %}
       <div class="alert alert-warning" role="alert">
         <h4 class="alert-heading">No results found</h4>

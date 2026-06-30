@@ -8,13 +8,6 @@ essential_exceptions = (
 )
 
 
-async def safe_get(db: AsyncSession, model: Any, id: Any) -> Optional[Any]:
-    try:
-        return await db.get(model, id)
-    except essential_exceptions:
-        return None
-
-
 async def safe_execute_first(db: AsyncSession, stmt) -> Optional[Any]:
     try:
         result = await db.execute(stmt)

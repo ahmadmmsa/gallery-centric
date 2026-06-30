@@ -9,6 +9,8 @@ import hashlib
 import hmac
 import json
 import secrets
+import time
+from urllib.parse import parse_qs
 
 from app.database import get_db
 from app.models.user import User
@@ -27,9 +29,11 @@ def _set_auth_cookie(response: Response, username: str) -> Response:
         data={"sub": username}, expires_delta=access_token_expires
     )
     response.set_cookie(
-        key="access_token", 
-        value=f"Bearer {access_token}", 
+        key="access_token",
+        value=f"Bearer {access_token}",
         httponly=True,
+        samesite="lax",
+        secure=settings.BASE_URL.startswith("https"),
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
@@ -40,10 +44,16 @@ templates = Jinja2Templates(directory="app/templates")
 from app.config import settings
 templates.env.globals["settings"] = settings
 
+ALTCHA_CHALLENGE_TTL_SECONDS = 300
+
 @router.get("/altcha-challenge")
 def get_challenge():
     """Generates a PoW challenge for the client."""
-    salt = secrets.token_hex(12)
+    # Embed an expiry in the salt (ALTCHA convention) so a solved challenge
+    # cannot be replayed indefinitely. The salt is bound into the signed
+    # challenge hash, so a client cannot extend it without invalidating the signature.
+    expires = int(time.time()) + ALTCHA_CHALLENGE_TTL_SECONDS
+    salt = f"{secrets.token_hex(12)}?expires={expires}"
     secret_number = secrets.randbelow(100000)
     challenge = hashlib.sha256(f"{salt}{secret_number}".encode()).hexdigest()
     signature = hmac.new(settings.ALTCHA_HMAC_KEY.encode(), challenge.encode(), hashlib.sha256).hexdigest()
@@ -120,6 +130,11 @@ async def register(
         hash_check = hashlib.sha256(f"{data['salt']}{data['number']}".encode()).hexdigest()
         if hash_check != data['challenge']:
             raise ValueError("Invalid proof of work")
+        # Reject expired/replayed challenges.
+        salt_params = parse_qs(data['salt'].split('?', 1)[1]) if '?' in data['salt'] else {}
+        expires_vals = salt_params.get('expires')
+        if not expires_vals or int(expires_vals[0]) < time.time():
+            raise ValueError("Challenge expired")
     except (ValueError, KeyError, json.JSONDecodeError):
         return templates.TemplateResponse(request, "auth/register.html", {
             "request": request,
@@ -156,5 +171,5 @@ async def register(
 @router.get("/logout")
 async def logout():
     res = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-    res.delete_cookie("access_token")
+    res.delete_cookie("access_token", samesite="lax", secure=settings.BASE_URL.startswith("https"))
     return res

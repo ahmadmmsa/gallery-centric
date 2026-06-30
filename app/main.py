@@ -5,7 +5,7 @@ from app.config import settings
 import os
 from sqlalchemy import exc as sa_exc
 from fastapi.requests import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.utils.seo import get_default_seo
 
@@ -20,11 +20,18 @@ from app.models.user import User
 
 class UserAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
+        request.state.user = None
+
+        # Skip the auth lookup for static/upload asset requests so we don't run a
+        # JWT decode + DB query on every image/CSS/JS fetch.
+        path = request.url.path
+        if path.startswith("/static/") or path.startswith(f"/{settings.UPLOAD_DIR}/"):
+            return await call_next(request)
+
         token = request.cookies.get("access_token")
         if token and token.startswith("Bearer "):
             token = token[7:]
-        
-        request.state.user = None
+
         if token:
             try:
                 payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

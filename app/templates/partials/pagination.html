@@ -1,4 +1,6 @@
 <!-- Pagination controls -->
+{% set pager_target = pager_target | default('#gallery-results', true) %}
+{% set pager_swap = pager_swap | default('outerHTML', true) %}
 {% set base_qs = "" %}
 {% if q %}{% set base_qs = base_qs ~ "&q=" ~ q %}{% endif %}
 {% if tags %}{% set base_qs = base_qs ~ "&tags=" ~ tags %}{% endif %}
@@ -16,7 +18,7 @@
       <a class="page-link"
         href="?page=1{{ base_qs }}"
         hx-get="?page=1{{ base_qs }}"
-        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        hx-target="{{ pager_target }}" hx-swap="{{ pager_swap }}" hx-push-url="true">
         <i class="bi bi-chevron-double-left"></i>
       </a>
     </li>
@@ -24,7 +26,7 @@
       <a class="page-link"
         href="?page={{ pagination.page - 1 }}{{ base_qs }}"
         hx-get="?page={{ pagination.page - 1 }}{{ base_qs }}"
-        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        hx-target="{{ pager_target }}" hx-swap="{{ pager_swap }}" hx-push-url="true">
         <i class="bi bi-chevron-left"></i>
       </a>
     </li>
@@ -38,7 +40,7 @@
       <a class="page-link"
         href="?page=1{{ base_qs }}"
         hx-get="?page=1{{ base_qs }}"
-        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        hx-target="{{ pager_target }}" hx-swap="{{ pager_swap }}" hx-push-url="true">
         1
       </a>
     </li>
@@ -57,7 +59,7 @@
       <a class="page-link"
         href="?page={{ p }}{{ base_qs }}"
         hx-get="?page={{ p }}{{ base_qs }}"
-        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        hx-target="{{ pager_target }}" hx-swap="{{ pager_swap }}" hx-push-url="true">
         {{ p }}
       </a>
     </li>
@@ -72,7 +74,7 @@
         <a class="page-link"
           href="?page={{ pagination.total_pages }}{{ base_qs }}"
           hx-get="?page={{ pagination.total_pages }}{{ base_qs }}"
-          hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+          hx-target="{{ pager_target }}" hx-swap="{{ pager_swap }}" hx-push-url="true">
           {{ pagination.total_pages }}
         </a>
       </li>
@@ -83,7 +85,7 @@
         <a class="page-link"
           href="?page={{ pagination.page + 1 }}{{ base_qs }}"
           hx-get="?page={{ pagination.page + 1 }}{{ base_qs }}"
-          hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+          hx-target="{{ pager_target }}" hx-swap="{{ pager_swap }}" hx-push-url="true">
           <i class="bi bi-chevron-right"></i>
         </a>
       </li>
@@ -91,7 +93,7 @@
         <a class="page-link"
           href="?page={{ pagination.total_pages }}{{ base_qs }}"
           hx-get="?page={{ pagination.total_pages }}{{ base_qs }}"
-          hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+          hx-target="{{ pager_target }}" hx-swap="{{ pager_swap }}" hx-push-url="true">
           <i class="bi bi-chevron-double-right"></i>
         </a>
       </li>

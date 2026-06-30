@@ -7,8 +7,10 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 import os
 import re
+import logging
 import tempfile
 import asyncio
+import aiofiles
 
 from app.database import get_db
 from app.utils.auth import get_admin_user
@@ -32,6 +34,25 @@ from app.routers.admin.helpers import form_body, redirect_to, _gen_slug
 gallery_router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["settings"] = settings
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+
+def _imports_folder_path(folder_name: str) -> str:
+    """Resolve a folder under uploads/imports, rejecting path traversal."""
+    base = os.path.realpath(os.path.join(settings.UPLOAD_DIR, "imports"))
+    target = os.path.realpath(os.path.join(base, folder_name))
+    if target == base or os.path.commonpath([base, target]) != base:
+        raise HTTPException(status_code=400, detail="Invalid folder name")
+    return target
+
+def _remove_files(paths) -> None:
+    """Best-effort deletion of a collection of local file paths (sync; run in a thread)."""
+    for path in paths:
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except Exception:
+                pass
 
 async def _get_gallery_or_404(db: AsyncSession, gallery_id: int, options: list = None) -> Gallery:
     stmt = select(Gallery).where(Gallery.id == gallery_id)
@@ -228,7 +249,7 @@ async def gallery_delete(request: Request,gallery_id: int,admin = Depends(get_ad
         from types import SimpleNamespace
         import logging
         try:
-            image_service.delete_gallery_files(SimpleNamespace(slug=gallery_slug))
+            await asyncio.to_thread(image_service.delete_gallery_files, SimpleNamespace(slug=gallery_slug))
             logging.info(f"Successfully deleted files for gallery: {gallery_slug}")
         except Exception as e:
             logging.error(f"Failed to delete files for gallery {gallery_slug}: {str(e)}")
@@ -283,24 +304,32 @@ async def gallery_upload_zip(
     )
     start_page = (max_page_result.scalar() or 0) + 1
     CHUNK_SIZE = 1024 * 1024
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
     temp_zip_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
-            temp_zip_path = temp_zip.name
+        # Create the temp path without holding a sync file handle, then stream
+        # the upload to disk with aiofiles so writes don't block the event loop.
+        fd, temp_zip_path = tempfile.mkstemp(suffix=".zip")
+        os.close(fd)
+        total = 0
+        async with aiofiles.open(temp_zip_path, "wb") as temp_zip:
             while True:
                 chunk = await file.read(CHUNK_SIZE)
                 if not chunk:
                     break
-                temp_zip.write(chunk)
-        try:
-            await zip_service.process_zip_upload(temp_zip_path, gallery, db, start_page=start_page)
-        finally:
-            from anyio.to_thread import run_sync
-            if temp_zip_path and await run_sync(os.path.exists, temp_zip_path):
-                await run_sync(os.remove, temp_zip_path)
+                total += len(chunk)
+                if total > max_bytes:
+                    raise HTTPException(status_code=413, detail=f"Upload exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
+                await temp_zip.write(chunk)
+        await zip_service.process_zip_upload(temp_zip_path, gallery, db, start_page=start_page)
         await db.commit()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        if temp_zip_path and await asyncio.to_thread(os.path.exists, temp_zip_path):
+            await asyncio.to_thread(os.remove, temp_zip_path)
     return {"status": "success"}
 
 @gallery_router.post("/galleries/{gallery_id}/upload-image")
@@ -316,9 +345,13 @@ async def gallery_upload_image(
     max_page_result = await db.execute(select(func.max(Page.page_number)).where(Page.gallery_id == gallery_id))
     max_page = max_page_result.scalar() or 0
     page_number = max_page + 1
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Allowed: JPEG, PNG, WebP, GIF.")
     try:
         file.file.seek(0)
         file_data = await file.read()
+        if len(file_data) > settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=f"Upload exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
         image_path, width, height = await image_service.process_page(
             file_data, gallery.slug, page_number
         )
@@ -339,9 +372,12 @@ async def gallery_upload_image(
             gallery.cover_path = await image_service.generate_cover(file_data, gallery.slug)
             gallery.thumbnail_path = await image_service.generate_thumbnail(file_data, gallery.slug)
         await db.commit()
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception as e:
         await db.rollback()
-        print(f"Upload Image Error: {str(e)}") 
+        logging.error(f"Upload Image Error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     return {"status": "success", "page_number": page_number}
 
@@ -355,13 +391,18 @@ async def gallery_upload_find(
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
     imports_dir = os.path.join(settings.UPLOAD_DIR, "imports")
-    os.makedirs(imports_dir, exist_ok=True)
-    folders = []
-    for entry in os.scandir(imports_dir):
-        if entry.is_dir():
-            image_count = sum(1 for root, _, files in os.walk(entry.path) for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')))
-            folders.append({"name": entry.name, "image_count": image_count})
-    folders.sort(key=lambda x: x["name"])
+
+    def _scan_import_folders():
+        os.makedirs(imports_dir, exist_ok=True)
+        result = []
+        for entry in os.scandir(imports_dir):
+            if entry.is_dir():
+                image_count = sum(1 for root, _, files in os.walk(entry.path) for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')))
+                result.append({"name": entry.name, "image_count": image_count})
+        result.sort(key=lambda x: x["name"])
+        return result
+
+    folders = await asyncio.to_thread(_scan_import_folders)
     context = {"request": request, "gallery": gallery, "folders": folders}
     return templates.TemplateResponse(request, "admin/partials/import_folders.html", context)
 
@@ -375,16 +416,23 @@ async def gallery_upload_find_folder(
     gallery = await db.get(Gallery, gallery_id)
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
-    folder_path = os.path.join(settings.UPLOAD_DIR, "imports", folder_name)
-    if not os.path.isdir(folder_path):
+    folder_path = _imports_folder_path(folder_name)
+
+    def _scan_folder_images():
+        if not os.path.isdir(folder_path):
+            return None
+        found = []
+        for root, _, files in os.walk(folder_path):
+            for f in files:
+                if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')) and not f.startswith("._"):
+                    rel_path = os.path.relpath(os.path.join(root, f), settings.UPLOAD_DIR)
+                    found.append(f"/{settings.UPLOAD_DIR}/{rel_path}")
+        found.sort(key=lambda x: [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', x)])
+        return found
+
+    images = await asyncio.to_thread(_scan_folder_images)
+    if images is None:
         raise HTTPException(status_code=404, detail="Folder not found")
-    images = []
-    for root, _, files in os.walk(folder_path):
-        for f in files:
-            if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')) and not f.startswith("._"):
-                rel_path = os.path.relpath(os.path.join(root, f), settings.UPLOAD_DIR)
-                images.append(f"/{settings.UPLOAD_DIR}/{rel_path}")
-    images.sort(key=lambda x: [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', x)])
     context = {"request": request,"gallery": gallery,"folder_name": folder_name,"images": images}
     return templates.TemplateResponse(request, "admin/partials/import_folder_contents.html", context)
 
@@ -398,8 +446,8 @@ async def gallery_import_folder(
     gallery = await db.get(Gallery, gallery_id)
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
-    folder_path = os.path.join(settings.UPLOAD_DIR, "imports", folder_name)
-    if not os.path.isdir(folder_path):
+    folder_path = _imports_folder_path(folder_name)
+    if not await asyncio.to_thread(os.path.isdir, folder_path):
         raise HTTPException(status_code=404, detail="Folder not found")
     max_page_result = await db.execute(select(func.max(Page.page_number)).where(Page.gallery_id == gallery_id))
     start_page = (max_page_result.scalar() or 0) + 1
@@ -464,12 +512,7 @@ async def page_delete(
         count_result = await db.execute(select(func.count()).select_from(Page).where(Page.gallery_id == gallery_id))
         gallery.page_count = count_result.scalar() or 0
     await db.commit()
-    for path in paths_to_remove:
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-            except Exception:
-                pass
+    await asyncio.to_thread(_remove_files, paths_to_remove)
     return {"status": "success"}
 
 @gallery_router.get("/galleries/{gallery_id}/deduplicate/scan")
@@ -483,7 +526,7 @@ async def scan_gallery_duplicates_route(
     gallery = result.scalars().first()
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
-    duplicate_groups = image_service.scan_gallery_duplicates(gallery.pages)
+    duplicate_groups = await asyncio.to_thread(image_service.scan_gallery_duplicates, gallery.pages)
     total_duplicates = sum(len(g["duplicates"]) for g in duplicate_groups)
     return templates.TemplateResponse(
         request,
@@ -506,7 +549,7 @@ async def remove_gallery_duplicates_route(
     gallery = result.scalars().first()
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
-    duplicate_groups = image_service.scan_gallery_duplicates(gallery.pages)
+    duplicate_groups = await asyncio.to_thread(image_service.scan_gallery_duplicates, gallery.pages)
     if not duplicate_groups:
         return Response(headers={"HX-Refresh": "true"})
     pages_to_delete = []
@@ -534,11 +577,6 @@ async def remove_gallery_duplicates_route(
         p.page_number = index
     gallery.page_count = len(remaining_pages)
     await db.commit()
-    for path in paths_to_remove:
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-            except Exception:
-                pass
+    await asyncio.to_thread(_remove_files, paths_to_remove)
     return Response(headers={"HX-Refresh": "true"})
 

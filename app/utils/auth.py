@@ -91,15 +91,3 @@ async def get_admin_user(current_user: User = Depends(get_current_active_user)):
             detail="The user doesn't have enough privileges"
         )
     return current_user
-
-async def get_optional_current_user(
-    request: Request,
-    token: Optional[str] = Depends(get_token_from_request),
-    db: AsyncSession = Depends(get_db)
-):
-    if not token:
-        return None
-    try:
-        return await get_current_user(request, token, db)
-    except HTTPException:
-        return None

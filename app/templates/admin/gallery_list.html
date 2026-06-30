@@ -24,6 +24,8 @@
 
 <!-- Pagination -->
 <div class="mt-4">
+    {% set pager_target = '#gallery-grid' %}
+    {% set pager_swap = 'innerHTML' %}
     {% include 'partials/pagination.html' %}
 </div>
 {% endblock %}

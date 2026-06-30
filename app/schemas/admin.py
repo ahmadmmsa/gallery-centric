@@ -1,6 +1,5 @@
 from typing import List, Optional
 from pydantic import BaseModel
-from datetime import datetime
 
 # Gallery Schemas
 class GalleryCreateRequest(BaseModel):
@@ -87,26 +86,6 @@ class ParodyCreateRequest(BaseModel):
 class ParodyUpdateRequest(BaseModel):
     name: str
     slug: Optional[str] = None
-
-# Language Schemas
-class LanguageResponse(BaseModel):
-    id: int
-    name: str
-    code: str
-
-    class Config:
-        from_attributes = True
-
-# Stats Schemas
-class AdminStats(BaseModel):
-    total_galleries: int
-    published_galleries: int
-    total_pages: int
-    total_tags: int
-    total_artists: int
-    total_characters: int
-    total_parodies: int
-    recent_galleries: list
 
 # User Schemas
 class AdminUserCreateRequest(BaseModel):

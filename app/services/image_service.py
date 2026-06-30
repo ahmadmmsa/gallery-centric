@@ -5,6 +5,9 @@ from io import BytesIO
 from PIL import Image, ImageFile, ImageOps
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+# Guard against decompression-bomb images: Pillow raises DecompressionBombError
+# when an image's pixel count exceeds 2x this cap (and warns past 1x).
+Image.MAX_IMAGE_PIXELS = 64_000_000  # ~64 megapixels
 from app.config import settings
 
 def _ensure_dir(path: str):

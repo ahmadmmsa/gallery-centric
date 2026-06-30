@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, Depends, Query, Header
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.orm import selectinload
 from urllib.parse import unquote, urlencode
 from app.database import get_db
@@ -45,7 +45,7 @@ async def home(request: Request, page: int = Query(1, ge=1), per_page: int = Que
     pagination = Pagination(page, per_page, total_count)
     galleries = await safe_execute_all(db, stmt.offset((pagination.page - 1) * per_page).limit(per_page).options(selectinload(Gallery.tags)))
     context = {"request": request, "galleries": galleries, "pagination": pagination, "sort": sort, "per_page": per_page, "seo": get_default_seo("Home")}
-    if hx_request: return templates.TemplateResponse(request, "partials/gallery_grid.html", context, headers={"HX-Push-Url": f"/?page={page}&per_page={per_page}&sort={sort}"}, status_code=200)
+    if hx_request: return templates.TemplateResponse(request, "partials/gallery_results.html", context, headers={"HX-Push-Url": f"/?page={page}&per_page={per_page}&sort={sort}"}, status_code=200)
     return templates.TemplateResponse(request, "pages/home.html", context, status_code=200)
 
 @router.get("/gallery/{slug}")
@@ -53,8 +53,10 @@ async def gallery_detail(request: Request, slug: str, db: AsyncSession = Depends
     stmt = select(Gallery).where(Gallery.slug == slug, Gallery.is_published == True).options(selectinload(Gallery.tags).selectinload(Tag.tag_type), selectinload(Gallery.artists), selectinload(Gallery.characters), selectinload(Gallery.parodies), selectinload(Gallery.language), selectinload(Gallery.pages))
     gallery = await safe_execute_first(db, stmt)
     if not gallery: return _render_404(request)
-    gallery.view_count += 1
+    # Atomic increment to avoid lost updates under concurrent views.
+    await db.execute(update(Gallery).where(Gallery.id == gallery.id).values(view_count=Gallery.view_count + 1))
     await db.commit()
+    gallery.view_count += 1  # reflect the increment for rendering (raw UPDATE bypasses the ORM)
     related = []
     if gallery.tags:
         tag_ids = [t.id for t in gallery.tags]
@@ -85,7 +87,7 @@ async def search_results(request: Request, q: str = Query(""), tags: Optional[st
             if v: query_params[k] = v
         if sort and sort != "latest": query_params["sort"] = sort
         if per_page and per_page != 20: query_params["per_page"] = per_page
-        return templates.TemplateResponse(request, "partials/gallery_grid.html", context, headers={"HX-Push-Url": f"/search?{urlencode(query_params)}"})
+        return templates.TemplateResponse(request, "partials/gallery_results.html", context, headers={"HX-Push-Url": f"/search?{urlencode(query_params)}"})
     return templates.TemplateResponse(request, "pages/search_results.html", context)
 
 @router.get("/tag/{slug}")
@@ -154,7 +156,7 @@ async def tags_search(request: Request, page: int = Query(1, ge=1), per_page: in
     active_tags_data = [{"tag": t, "remove_url": f"/tags/?{urllib.parse.quote(' '.join([q for q in tag_queries if q.replace('_', ' ').lower() != t.name.lower()]))}" if [q for q in tag_queries if q.replace("_", " ").lower() != t.name.lower()] else "/tags/"} for t in active_tags]
     tags_query_val = " ".join(tag_queries)
     context = {"request": request, "active_tags_data": active_tags_data, "tags_query_val": tags_query_val, "tags": tags_query_val, "galleries": galleries, "pagination": pagination, "sort": sort, "per_page": per_page, "seo": get_default_seo("Search by Tags")}
-    if hx_request: return templates.TemplateResponse(request, "partials/gallery_grid.html", context, headers={"HX-Push-Url": f"/tags/?{query_str}"})
+    if hx_request: return templates.TemplateResponse(request, "partials/gallery_results.html", context, headers={"HX-Push-Url": f"/tags/?{query_str}"})
     return templates.TemplateResponse(request, "pages/tags_search.html", context)
 
 @router.get("/api/tags/autocomplete")

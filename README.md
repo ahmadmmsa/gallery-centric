@@ -1,16 +1,5 @@
 
-Project Name: gallery_centric
 
-do these one session at a time
-Each session, paste the relevant section of the prompt above plus: "Continue from where we left off, here is what's done so far"
-
-Session 1 — Models + DB setup
-Session 2 — Image + ZIP services
-Session 3 — Search service (PostgreSQL full-text search)
-Session 4 — Frontend routes + templates
-Session 5 — Admin routes + templates
-Session 6 — Static CSS/JS (reader, filters)
-Session 7 — Docker + Alembic + seed data
 
 Project Structure:
 gallery-centric/
@@ -111,7 +100,12 @@ gallery-centric/
 ├── Dockerfile
 └── README.md
 
-Build a complete picture gallery web application using:
+
+====================================================
+PROJECT NAME: gallery_centric
+====================================================
+
+a complete picture gallery web application using:
 
 - FastAPI (async, Python 3.11+)
 - HTMX 2.x (for dynamic UI without heavy JavaScript)
@@ -126,10 +120,6 @@ Build a complete picture gallery web application using:
 - python-slugify (URL slug generation)
 - python-jose + passlib (admin authentication)
 - Docker + docker-compose (deployment)
-
-====================================================
-PROJECT NAME: gallery_centric
-====================================================
 
 ====================================================
 DATABASE MODELS (SQLAlchemy async)

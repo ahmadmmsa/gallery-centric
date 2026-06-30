@@ -44,10 +44,12 @@
             }
         });
         const goToTopBtn = document.getElementById("gototop");
-        window.onscroll = function() { scrollFunction();};
-        function scrollFunction() {
-            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) { goToTopBtn.style.display = "block"; } else { goToTopBtn.style.display = "none"; } }
-        goToTopBtn.addEventListener("click", function() { window.scrollTo({ top: 0, behavior: "smooth" }); });
+        if (goToTopBtn) {
+            window.onscroll = function() { scrollFunction();};
+            function scrollFunction() {
+                if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) { goToTopBtn.style.display = "block"; } else { goToTopBtn.style.display = "none"; } }
+            goToTopBtn.addEventListener("click", function() { window.scrollTo({ top: 0, behavior: "smooth" }); });
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>

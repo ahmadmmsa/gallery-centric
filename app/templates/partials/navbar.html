@@ -5,7 +5,7 @@
       <form class="d-flex justify-content-between align-items-center gap-2 w-100" action="/search" method="get">
         <input class="form-control text-light border-secondary" type="search" value="{{ q if q else '' }}"
           name="q" placeholder="Search..." aria-label="Search" value="{{ q if q else '' }}" hx-get="/search"
-          hx-trigger="input changed delay:300ms, search" hx-target="#search-results" hx-push-url="true">
+          hx-trigger="input changed delay:300ms, search" hx-target="#gallery-results" hx-swap="outerHTML" hx-push-url="true">
         <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
         <button class="navbar-toggler x-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
                 aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
