@@ -1,0 +1,215 @@
+<form id="filter-form" action="/search" method="get" class="p-3 mt-4">
+<div class="row mb-2 g-2 align-items-center">
+  <div class="col-md position-relative">
+    <input type="text" id="filter-tags" name="tags" placeholder="Tag Name..."
+      class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="">
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+  </div>
+  <div class="col-md position-relative">
+    <input type="text" id="filter-artists" name="artists" placeholder="Artist Name..."
+      class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="artist">
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+  </div>
+  <div class="col-md position-relative">
+    <input type="text" id="filter-parodies" name="parodies" placeholder="Parody Name..."
+      class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="parody">
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+  </div>
+  <div class="col-md position-relative">
+    <input type="text" id="filter-characters" name="characters" placeholder="Character Name..."
+      class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="character">
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+  </div>
+  <div class="col-md">
+    <select id="filter-language" name="language" class="form-select form-select-sm text-light">
+      <option value="">All</option>
+      <option value="en" {% if language=="en" %}selected{% endif %}>English</option>
+      <option value="ja" {% if language=="ja" %}selected{% endif %}>Japanese</option>
+      <option value="zh" {% if language=="zh" %}selected{% endif %}>Chinese</option>
+      <option value="es" {% if language=="es" %}selected{% endif %}>Spanish</option>
+      <option value="ar" {% if language=="ar" %}selected{% endif %}>Arabic</option>
+    </select>
+  </div>
+  <div class="col-md-auto">
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+  </div>
+</div>
+
+  <div class="row p-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap" id="active-tags-container">
+        {% if active_tags_data %}
+          {% for item in active_tags_data %}
+          <a href="{{ item.remove_url }}"
+            class="badge py-1 px-2 rounded-pill existing-tag-badge text-decoration-none d-inline-flex align-items-center gap-1"
+            style="font-size: .7rem; background-color: {{ item.tag.tag_type.color if (item.tag.tag_type and item.tag.tag_type.color) else '#6c757d' }};"
+            title="Remove {{ item.tag.name }}"
+            data-tag-name="{{ item.tag.name }}">
+            {{ item.tag.name }} <i class="bi bi-x"></i>
+          </a>
+          {% endfor %}
+        {% endif %}
+      </div>
+  </div>
+</form>
+
+<style>
+  .autocomplete-suggestions .dropdown-item:hover {
+    background-color: var(--bs-primary) !important;
+    color: white !important;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // --- Navbar collapse persistence ---
+    const nav = document.getElementById('navbarContent');
+    if (nav) {
+      if (sessionStorage.getItem('navOpen') === 'true') {
+        nav.classList.add('show');
+      }
+      nav.addEventListener('show.bs.collapse', () => sessionStorage.setItem('navOpen', 'true'));
+      nav.addEventListener('hide.bs.collapse', () => sessionStorage.setItem('navOpen', 'false'));
+    }
+
+    // --- Event Delegation for Tag Removal ---
+    // Instead of binding a click event to every new badge, we listen to the parent container once.
+    document.getElementById('active-tags-container')?.addEventListener('click', (e) => {
+      const badge = e.target.closest('.client-tag-badge');
+      if (badge) {
+        badge.remove();
+      }
+    });
+
+    // --- Autocomplete Logic ---
+    const inputs = document.querySelectorAll('.autocomplete-input');
+    inputs.forEach(input => {
+      const suggestionsContainer = input.nextElementSibling;
+      const type = input.getAttribute('data-autocomplete-type');
+
+      input.addEventListener('input', async (e) => {
+        const val = e.target.value;
+        const parts = val.split(',');
+        const currentQuery = parts[parts.length - 1].trim();
+
+        if (currentQuery.length < 2) {
+          suggestionsContainer.classList.add('d-none');
+          suggestionsContainer.classList.remove('d-block');
+          return;
+        }
+
+        try {
+          const typeParam = type ? `&type=${type}` : '';
+          const res = await fetch(`/api/tags/autocomplete?q=${encodeURIComponent(currentQuery)}${typeParam}`);
+          const suggestions = await res.json();
+
+          if (suggestions.length === 0) { 
+            suggestionsContainer.classList.add('d-none');
+            suggestionsContainer.classList.remove('d-block');
+            return; 
+          }
+
+          suggestionsContainer.innerHTML = '';
+          suggestions.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'dropdown-item text-light bg-dark border-0 py-2 px-3 text-start w-100';
+            btn.textContent = type ? item.value : item.name;
+
+            btn.addEventListener('click', () => {
+              const selectedValue = type ? (type + ':' + item.value) : item.name;
+              const badge = document.createElement('span');
+              
+              badge.className = 'badge py-1 px-2 rounded-pill client-tag-badge text-light d-inline-flex align-items-center gap-1';
+              badge.style.backgroundColor = '#6c757d';
+              badge.style.cursor = 'pointer';
+              badge.setAttribute('data-tag-name', selectedValue);
+              badge.innerHTML = `${selectedValue} <i class="bi bi-x"></i>`;
+              
+              document.getElementById('active-tags-container')?.appendChild(badge);
+              input.value = '';
+              suggestionsContainer.classList.add('d-none');
+              suggestionsContainer.classList.remove('d-block');
+              input.focus();
+            });
+
+            suggestionsContainer.appendChild(btn);
+          });
+          
+          suggestionsContainer.classList.remove('d-none');
+          suggestionsContainer.classList.add('d-block');
+          
+        } catch (err) {
+          console.error('Autocomplete error:', err);
+        }
+      });
+
+      // Close dropdowns if clicking outside
+      document.addEventListener('click', (e) => {
+        if (e.target !== input && !suggestionsContainer.contains(e.target)) {
+          suggestionsContainer.classList.add('d-none');
+          suggestionsContainer.classList.remove('d-block');
+        }
+      });
+    });
+
+   // --- Form Submit & URL Generation ---
+    const filterForm = document.getElementById('filter-form');
+    if (filterForm) {
+      filterForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        let tagsQueryParts = [];
+
+        // Grab tags already in the active container
+        document.querySelectorAll('#active-tags-container .existing-tag-badge, #active-tags-container .client-tag-badge').forEach(badge => {
+          const tName = badge.getAttribute('data-tag-name');
+          if (tName) tagsQueryParts.push(tName.replace(/\s+/g, '_'));
+        });
+
+        // Parse remaining un-submitted text in the input fields
+        const processField = (id, typeName) => {
+          const val = document.getElementById(id)?.value.trim();
+          if (!val) return;
+          val.split(',').forEach(item => {
+            const cleaned = item.trim();
+            if (!cleaned) return;
+            const prefixed = typeName && !cleaned.startsWith(typeName + ':') ? `${typeName}:${cleaned}` : cleaned;
+            tagsQueryParts.push(prefixed.replace(/\s+/g, '_'));
+          });
+        };
+
+        processField('filter-tags', null);
+        processField('filter-artists', 'artist');
+        processField('filter-parodies', 'parody');
+        processField('filter-characters', 'character');
+
+        // Deduplicate the final list
+        tagsQueryParts = [...new Set(tagsQueryParts)];
+
+        // Reverted to manual string building to prevent URL API from encoding spaces into a single blob
+        let url = tagsQueryParts.length ? `/tags/?${tagsQueryParts.join(' ')}` : '/search';
+        let extraParams = [];
+
+        // Map extra search parameters
+        const languageSelect = filterForm.querySelector('select[name="language"]');
+        const sortSelect     = filterForm.querySelector('select[name="sort"]');
+        const perPageSelect  = filterForm.querySelector('select[name="per_page"]');
+        const qInput         = filterForm.querySelector('input[name="q"]');
+
+        if (sortSelect?.value)    extraParams.push(`sort=${sortSelect.value}`);
+        if (perPageSelect?.value) extraParams.push(`per_page=${perPageSelect.value}`);
+        if (languageSelect?.value) extraParams.push(`language=${languageSelect.value}`);
+        if (qInput?.value.trim()) extraParams.push(`q=${encodeURIComponent(qInput.value.trim())}`);
+
+        if (extraParams.length > 0) {
+          url += `&${extraParams.join('&')}`;
+        }
+
+        // Keep navbar open on the next page before navigating
+        sessionStorage.setItem('navOpen', 'true');
+        window.location.href = url;
+      });
+    }
+  });
+</script>

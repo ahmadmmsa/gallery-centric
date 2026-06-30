@@ -1,0 +1,268 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Manage Pages - {{ gallery.title }} - Admin{% endblock %}
+
+{% block head %}
+<script src="/static/js/Sortable.min.js"></script>
+<style>
+    .upload-zone {
+        border: 1px dashed var(--bs-secondary);
+        border-radius: 4px;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        background-color: var(--bs-dark);
+        transition: border-color 0.2s ease;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+        border-color: var(--bs-info);
+    }
+
+    .upload-zone i {
+        font-size: 1.5rem;
+        color: var(--bs-secondary);
+        margin-bottom: 0.5rem;
+        display: inline-block;
+    }
+
+    .page-card {
+        transition: border-color 0.2s ease;
+    }
+
+    .page-card:hover {
+        border-color: var(--bs-info) !important;
+    }
+
+    .page-card.selected {
+        border-color: var(--bs-danger) !important;
+        background-color: rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .page-img-container {
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        background: #000;
+        position: relative;
+    }
+
+    .page-img-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .drag-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        cursor: grab;
+    }
+    
+    .drag-overlay:active {
+        cursor: grabbing;
+    }
+
+    .page-card:hover .drag-overlay {
+        opacity: 1;
+    }
+
+    .sortable-ghost {
+        opacity: 0.4;
+        border: 1px dashed var(--bs-info) !important;
+    }
+    
+    /* Scrollbar for compact queues */
+    .compact-scroll {
+        max-height: 120px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-secondary">
+    <h6 class="mb-0">
+        <a href="/admin/galleries/{{ gallery.id }}/edit" class="text-decoration-none text-light">
+            {{ gallery.title }}
+        </a>
+        <span class="text-secondary ms-2">/ Pages</span>
+    </h6>
+    <div>
+        <form method="post" class="needs-validation d-flex align-items-center gap-2 m-0">
+            <a href="/admin/galleries/{{ gallery.id }}/edit" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left"></i> Edit
+            </a>
+            {% if gallery.is_published %}
+            <a href="/gallery/{{ gallery.slug }}" target="_blank" class="btn btn-sm btn-primary">
+                <i class="bi bi-eye"></i> View
+            </a>
+            <button type="submit" class="btn btn-sm btn-warning" formmethod="post"
+                formaction="/admin/galleries/{{ gallery.id }}/unpublish">
+                <i class="bi bi-eye-slash"></i> Unpublish
+            </button>
+            {% else %}
+            <button type="submit" class="btn btn-sm btn-success" formmethod="post"
+                formaction="/admin/galleries/{{ gallery.id }}/publish">
+                <i class="bi bi-cloud-upload"></i> Publish
+            </button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="container-fluid px-0">
+    
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body p-2">
+                    <form id="zipUploadForm" action="/admin/galleries/{{ gallery.id }}/upload-zip" method="post" enctype="multipart/form-data">
+                        <div class="upload-zone py-2" id="zipDropZone">
+                            <i class="bi bi-file-earmark-zip d-block mb-1"></i>
+                            <span class="small">Drag & drop ZIP or click</span>
+                            <input type="file" name="file" accept=".zip" class="d-none" id="zipFileInput" required>
+                        </div>
+                        <div id="zipFileInfo" class="mt-2 p-1 bg-black bg-opacity-25 rounded border border-secondary d-none">
+                            <div class="d-flex justify-content-between align-items-center px-1">
+                                <span class="small text-truncate" id="zipFileName">archive.zip</span>
+                                <span class="badge bg-secondary" id="zipFileSize">0 MB</span>
+                            </div>
+                        </div>
+                        <button type="submit" id="zipSubmitBtn" class="btn btn-sm btn-primary w-100 mt-2 d-none">
+                            Process ZIP
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-body p-2">
+                    <div class="upload-zone py-2" id="imageDropZone">
+                        <i class="bi bi-images d-block mb-1"></i>
+                        <span class="small">Drag & drop images (multi)</span>
+                        <input type="file" accept="image/*" multiple class="d-none" id="imageFileInput">
+                    </div>
+                    <div id="uploadStatusCard" class="d-none mt-2">
+                        <div class="d-flex justify-content-between align-items-center px-1 mb-1">
+                            <span class="small text-secondary">Queue</span>
+                            <span class="badge bg-info" id="queueStatus">0/0</span>
+                        </div>
+                        <div class="compact-scroll pe-1" id="uploadQueueContainer">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-dark border-secondary mb-3">
+        <div class="card-header border-secondary p-2 d-flex justify-content-between align-items-center bg-transparent">
+            <span class="small fw-bold"><i class="bi bi-hdd-network text-info me-1"></i> Server Import</span>
+            <button class="btn btn-sm btn-outline-info py-0" 
+                hx-get="/admin/galleries/{{ gallery.id }}/upload-find" 
+                hx-target="#importFoldersList" 
+                hx-indicator="#scanFoldersIndicator">
+                <span class=" htmx-indicator me-1" id="scanFoldersIndicator" role="status" aria-hidden="true" style="display: none;"></span>
+                Scan /uploads/imports
+            </button>
+        </div>
+        <div class="card-body p-2">
+            <div class="row g-2">
+                <div class="col-md-4" id="importFoldersList">
+                    <div class="text-secondary text-center py-3 border border-secondary rounded border-dashed h-100 small">
+                        Click Scan to find folders.
+                    </div>
+                </div>
+                <div class="col-md-8" id="importFolderContents">
+                    <div class="text-secondary text-center py-3 border border-secondary rounded border-dashed h-100 small">
+                        Select a folder to view contents.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pages %}
+    <div class="card bg-dark border-secondary mb-3">
+        <div class="card-body p-2 d-flex justify-content-between align-items-start">
+            <div>
+                <span class="small fw-bold"><i class="bi bi-magic text-warning me-1"></i> Deduplication</span>
+                <div id="duplicateResults" class="mt-1"></div>
+            </div>
+            <button class="btn btn-sm btn-warning" hx-get="/admin/galleries/{{ gallery.id }}/deduplicate/scan"
+                hx-target="#duplicateResults" hx-indicator="#scanIndicator">
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="scanIndicator" role="status" aria-hidden="true" style="display: none;"></span>
+                Scan
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary p-2 d-flex justify-content-between align-items-center bg-transparent">
+            <span class="small fw-bold">Page Organizer</span>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-danger" id="deleteSelectedBtn" disabled>
+                    <i class="bi bi-trash"></i> Delete Selected (<span id="selectedCount">0</span>)
+                </button>
+                {% if pages %}
+                <span class="badge bg-secondary" id="pageCountBadge">{{ gallery.page_count }} images</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-2">
+            <div class="text-center py-4 {% if pages %}d-none{% endif %}" id="emptyPagesState">
+                <span class="text-secondary small">No pages uploaded yet.</span>
+            </div>
+
+            <div class="row g-2" id="pagesSortableGrid">
+                {% for page in pages %}
+                <div class="col-4 col-sm-3 col-md-2 col-lg-1 page-item" style="min-width: 120px;" data-id="{{ page.id }}" id="page-{{ page.id }}">
+                    <div class="card bg-transparent border-secondary page-card h-100 rounded-1" style="cursor: pointer;">
+                        <div class="page-img-container rounded-top-1">
+                            <img src="{% if page.thumbnail_path %}{{ page.thumbnail_path }}{% else %}{{ page.image_path }}{% endif %}"
+                                alt="Pg {{ page.page_number }}" loading="lazy">
+                            <span class="position-absolute top-0 start-0 badge bg-dark bg-opacity-75 m-1 p-1 page-number-label" style="font-size: 0.7rem;">
+                                #{{ page.page_number }}
+                            </span>
+                            <div class="position-absolute top-0 end-0 m-1 z-2">
+                                <input class="form-check-input page-select-cb" type="checkbox" value="{{ page.id }}" style="transform: scale(1.2); cursor: pointer;">
+                            </div>
+                            <div class="drag-overlay z-1">
+                                <i class="bi bi-arrows-move text-white"></i>
+                            </div>
+                        </div>
+                        <div class="card-footer p-1 border-secondary d-flex justify-content-between align-items-center bg-dark">
+                            <span class="small text-secondary" style="font-size: 0.75rem;">Pg {{ page.page_number }}</span>
+                            <button class="btn btn-sm btn-outline-danger border-0 delete-btn py-0 px-1" 
+                            data-id="{{ page.id }}" type="button" title="Delete">
+                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const GALLERY_ID = {{ gallery.id }};
+    const GALLERY_SLUG = "{{ gallery.slug }}";
+</script>
+<script src="/static/js/upload.js?v=2"></script>
+{% endblock %}

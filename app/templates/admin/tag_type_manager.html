@@ -1,0 +1,170 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Tag Type Manager - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-bookmark"></i> Tag Types</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTagTypeModal">
+            <i class="bi bi-plus-lg"></i> New Type
+        </button>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover mb-0">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Color</th>
+                    <th>Visible</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag_type in tag_types %}
+                    <tr>
+                        <td><strong>{{ tag_type.name }}</strong></td>
+                        <td><code>{{ tag_type.slug }}</code></td>
+                        <td>
+                            <div style="display: inline-block; width: 30px; height: 30px; background-color: {{ tag_type.color }}; border-radius: 4px; border: 1px solid #666;"></div>
+                            <code>{{ tag_type.color }}</code>
+                        </td>
+                        <td>
+                            {% if tag_type.is_visible %}
+                                <i class="bi bi-check-circle text-success"></i>
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                             <button class="btn btn-sm btn-outline-primary" 
+                                     data-bs-toggle="modal" data-bs-target="#editTagTypeModal" 
+                                     data-tag-type-id="{{ tag_type.id }}"
+                                     data-tag-type-name="{{ tag_type.name }}"
+                                     data-tag-type-slug="{{ tag_type.slug }}"
+                                     data-tag-type-color="{{ tag_type.color }}"
+                                     data-tag-type-visible="{{ 'true' if tag_type.is_visible else 'false' }}"
+                                     title="Edit">
+                                 <i class="bi bi-pencil"></i>
+                             </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    hx-post="/admin/tag-types/{{ tag_type.id }}/delete"
+                                    hx-confirm="Are you sure you want to delete the tag type '{{ tag_type.name }}'?"
+                                    data-confirm-title="Delete Tag Type"
+                                    data-confirm-text="Delete"
+                                    data-confirm-class="btn-danger"
+                                    title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- New Tag Type Modal -->
+<div class="modal fade" id="newTagTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">New Tag Type</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/admin/tag-types/new">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Type Name *</label>
+                        <input type="text" name="name" class="form-control bg-dark text-light border-secondary" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Color</label>
+                        <input type="color" name="color" class="form-control form-control-color bg-dark border-secondary" value="#6c757d">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_visible" class="form-check-input" value="true" checked>
+                            <label class="form-check-label">Visible</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Type</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Tag Type Modal -->
+<div class="modal fade" id="editTagTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Edit Tag Type</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editTagTypeForm" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Type Name *</label>
+                        <input type="text" name="name" id="editTagTypeName" class="form-control bg-dark text-light border-secondary" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Slug</label>
+                        <input type="text" name="slug" id="editTagTypeSlug" class="form-control bg-dark text-light border-secondary">
+                        <small class="text-muted">Leave empty to auto-generate from name</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Color</label>
+                        <input type="color" name="color" id="editTagTypeColor" class="form-control form-control-color bg-dark border-secondary">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_visible" id="editTagTypeVisible" class="form-check-input" value="true">
+                            <label class="form-check-label">Visible</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const editTagTypeModal = document.getElementById('editTagTypeModal');
+    if (editTagTypeModal) {
+        editTagTypeModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const typeId = button.getAttribute('data-tag-type-id');
+            const typeName = button.getAttribute('data-tag-type-name');
+            const typeSlug = button.getAttribute('data-tag-type-slug');
+            const typeColor = button.getAttribute('data-tag-type-color');
+            const typeVisible = button.getAttribute('data-tag-type-visible') === 'true';
+            
+            const form = editTagTypeModal.querySelector('form');
+            form.action = `/admin/tag-types/${typeId}/edit`;
+            
+            document.getElementById('editTagTypeName').value = typeName;
+            document.getElementById('editTagTypeSlug').value = typeSlug;
+            document.getElementById('editTagTypeColor').value = typeColor;
+            document.getElementById('editTagTypeVisible').checked = typeVisible;
+        });
+    }
+</script>
+{% endblock %}

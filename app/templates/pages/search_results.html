@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+
+{% block content %}
+<div class="w-100">
+  <div class="row mb-4">
+      {% if q %}
+      <p class="text-muted">Results for: <strong>"{{ q }}"</strong> <span class="badge bg-secondary">{{
+          results.total_hits }} found</span></p>
+      {% endif %}
+  </div>
+
+  <div class="row">
+    <!-- Search results grid -->
+    <div class="col-lg-9">
+      {% if galleries %}
+      {% include 'partials/gallery_grid.html' %}
+
+      <!-- Pagination -->
+      {% include 'partials/pagination.html' %}
+      {% else %}
+      <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">No results found</h4>
+        <p>Try adjusting your search query or filters.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

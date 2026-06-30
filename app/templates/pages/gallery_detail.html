@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+
+{% block content %}
+<div>
+  <div>
+
+    <style>
+      .gallery-info {
+        display: grid;
+
+        h1 {
+          font-weight: 600;
+          font-size: 1.2rem;
+        }
+
+        p {
+          font-size: 13pt;
+        }
+
+        span {
+          font-size: x-small;
+        }
+      }
+
+      .tags-badge {
+
+        a {
+          padding: 0 7px 0 7px;
+          background-color: rgba(112, 112, 112, 0.205);
+          border-radius: 15px;
+        }
+
+        span {
+          font-size: xx-small;
+        }
+      }
+    </style>
+
+
+    <!-- Gallery Header -->
+    <div>
+      <div>
+        <div class="gallery-info">
+          <div style="display: flex; gap: 20px;">
+            <h1>{{ gallery.title }}</h1>
+            <span title="Pages"><i class="bi bi-file-image"></i> {{ gallery.page_count }}</span>
+            <span title="Views"><i class="bi bi-eye"></i> {{ gallery.view_count }}</span>
+            <span title="Favorites"><i class="bi bi-heart-fill"></i> {{ gallery.favorite_count }}</span>
+          </div>
+          {% if gallery.description %}<p>{{ gallery.description | safe }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <!-- Artists, Characters, Parodies -->
+    <div style="display:flex; gap:30px;">
+
+      {% if gallery.language %}
+      <p class="small text-muted mb-2">
+        <i class="bi bi-globe"></i> <strong>Language:</strong> {{ gallery.language.name }}
+      </p>
+      {% endif %}
+      {% if gallery.published_date %}
+      <p class="small text-muted mb-3">
+        <i class="bi bi-calendar"></i> <strong>Published:</strong> {{ gallery.published_date.strftime('%B %d,
+        %Y') }}
+      </p>
+      {% endif %}
+
+      {% if gallery.artists %}
+      <div class="tags-badge mb-2">
+        <span class="text-uppercase fw-bold text-muted me-1">Artists:</span>
+        {% for artist in gallery.artists %}
+        <a href="/tags/?artist:{{ artist.name.replace(' ', '_') }}" style="background-color: #6f42c1 !important; color: #fff; text-decoration: none;" class="d-inline-block mb-1">{{ artist.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if gallery.characters %}
+      <div class="tags-badge mb-2">
+        <span class="text-uppercase fw-bold text-muted me-1">Characters:</span>
+        {% for character in gallery.characters %}
+        <a href="/tags/?character:{{ character.name.replace(' ', '_') }}" style="background-color: #198754 !important; color: #fff; text-decoration: none;" class="d-inline-block mb-1">{{ character.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if gallery.parodies %}
+      <div class="tags-badge mb-2">
+        <span class="text-uppercase fw-bold text-muted me-1">Parodies:</span>
+        {% for parody in gallery.parodies %}
+        <a href="/tags/?parody:{{ parody.name.replace(' ', '_') }}" style="background-color: #dc3545 !important; color: #fff; text-decoration: none;" class="d-inline-block mb-1">{{ parody.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if gallery.tags %}
+      <div class="tags-badge mb-2">
+        <span class="text-uppercase fw-bold text-muted me-1">Tags:</span>
+        {% for tag in gallery.tags %}
+        <a href="/tags/?{{ tag.name.replace(' ', '_') }}" style="background-color: {{ tag.tag_type.color if (tag.tag_type and tag.tag_type.color) else 'rgba(112, 112, 112, 0.205)' }} !important; color: #fff; text-decoration: none;" class="d-inline-block mb-1">{{ tag.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+
+
+  <!-- Pages Grid / Thumbnails -->
+  {% if pages %}
+  <div>
+    <div style="margin: 15px 0 15px 0">
+      <div class="row g-0 row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6">
+        {% for page in pages %}
+        <div class="col text-center">
+          <a href="/read/{{ gallery.slug }}?page={{ page.page_number }}"
+            class="d-block overflow-hidden position-relative thumbnail-link"
+            style="aspect-ratio: 3/4; margin: 3px; ">
+            {% if page.thumbnail_path %}
+            <img src="{{ page.thumbnail_path }}" alt="Page {{ page.page_number }}" class="w-100 h-100 object-fit-cover"
+              loading="lazy">
+            {% else %}
+            <img src="{{ page.image_path }}" alt="Page {{ page.page_number }}" class="w-100 h-100 object-fit-cover"
+              loading="lazy">
+            {% endif %}
+            <span class="position-absolute top-0 start-0 end-1 bg-dark bg-opacity-75 text-white small px-1"
+              style="font-size: 0.75rem;">
+              {{ page.page_number }}
+            </span>
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+
+
+  <!-- Sidebar: Related Galleries -->
+  <div>
+    {% if related_galleries %}
+    <div>
+      <div>
+        <h6 class="mb-0"><i class="bi bi-shuffle"></i> Related Galleries</h6>
+      </div>
+      <div>
+        <div class="list-group list-group-flush">
+          {% for related in related_galleries %}
+          <a href="/gallery/{{ related.slug }}"
+            class="list-group-item list-group-item-action bg-dark border-secondary text-decoration-none py-2">
+            <div class="small">
+              <strong>{{ related.title | truncate(30) }}</strong>
+              <br>
+              <span class="text-muted">
+                <i class="bi bi-file-image"></i> {{ related.page_count }}
+              </span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Go To Top Button -->
+    <button id="gototop"><i class="bi bi-arrow-up"></i></button>
+
+</div>
+</div>
+
+{% endblock %}

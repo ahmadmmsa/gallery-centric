@@ -1,0 +1,46 @@
+<style>
+    .tag-already-added { animation: tagAlreadyAdded 1s ease-in-out;}
+    @keyframes tagAlreadyAdded {0% {transform: translateX(0);}
+        10% {transform: translateX(-5px);}
+        20% {transform: translateX(5px);}
+        30% {transform: translateX(-5px);}
+        40% {transform: translateX(5px);}
+        50% {transform: translateX(-5px);}
+        60% {transform: translateX(5px);}
+        70% {transform: translateX(-5px);}
+        80% {transform: translateX(5px);}
+        90% {transform: translateX(-5px);}
+        100% {transform: translateX(0);}
+    }
+</style>
+<div class="list-group shadow position-absolute z-3 w-100">
+    {% set exact_match = namespace(found=false) %}
+    {% for item in results %}
+    {% if item.name.lower() == query.lower() %}
+    {% set exact_match.found = true %}
+    {% endif %}
+    <button type="button" class="list-group-item list-group-item-action"
+        hx-trigger="click[!document.querySelector('#{{ type }}-chips input[value=\'{{ item.id }}\']')]"
+        hx-get="/admin/taxonomy/chip?id={{ item.id }}&type={{ type }}" hx-params="none" hx-target="#{{ type }}-chips"
+        hx-swap="beforeend" onclick="if(document.querySelector('#{{ type }}-chips input[value=\'{{ item.id }}\']')) {
+            let btn = this;
+            let originalText = btn.innerHTML;
+            btn.innerHTML = 'already added!';
+            btn.classList.add('tag-already-added');
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('tag-already-added');
+            }, 1500);
+        }">
+        {{ item.name }}
+    </button>
+    {% endfor %}
+    {% if not exact_match.found and query %}
+    <button type="button" class="list-group-item list-group-item-action list-group-item-success"
+        hx-post="/admin/taxonomy/create" hx-vals='{"name":{{ query | tojson }},"type":"{{ type }}"}'
+        {% if type == "tag" %}hx-include="#{{ type }}-tag-type-select"{% endif %}
+        hx-target="#{{ type }}-chips" hx-swap="beforeend">
+        <i class="bi bi-plus-circle"></i> Create new: <strong>{% if type == 'tag' and tag_type %}{{ tag_type }}:{% endif %}{{ query }}</strong>
+    </button>
+    {% endif %}
+</div>

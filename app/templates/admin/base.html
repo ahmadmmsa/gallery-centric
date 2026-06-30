@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin - {{ settings.SITE_NAME }}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="/static/js/htmx.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="d-flex">
+        <nav class="navbar-vertical navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <h2 class="navbar-brand fw-bold text-primary" href="/admin">
+                    {{ settings.SITE_NAME }} <a class="text-secondary" href="/" target="_blank"><i class="bi bi-house-door"></i></a>
+                </h2> 
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav"
+                    aria-controls="adminNav" aria-expanded="false">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="adminNav">
+                    <ul class="navbar-nav flex-column mt-3">
+                        <li class="nav-item"><a class="nav-link" href="/admin/"><i class="bi bi-house"></i> Dashboard</a></li>
+                        <li class="nav-header">System</li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/users"><i class="bi bi-people"></i> Users</a></li>
+                        <li class="nav-header">Content</li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/galleries"><i class="bi bi-images"></i> Galleries</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/galleries/new"><i class="bi bi-plus-circle"></i> New Gallery</a></li>
+                        <li class="nav-header">Metadata</li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/tags"><i class="bi bi-tag"></i> Tags</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/tag-types"><i class="bi bi-bookmark"></i> Tag Types</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/artists"><i class="bi bi-person"></i> Artists</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/characters"><i class="bi bi-person-bounding-box"></i> Characters</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/parodies"><i class="bi bi-film"></i> Parodies</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/languages"><i class="bi bi-globe"></i> Languages</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Main Content -->
+        <main style="width: 100%;">
+            <div class="p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/confirm-modal.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        });
+    </script>
+    {% include 'partials/confirm_modal.html' %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

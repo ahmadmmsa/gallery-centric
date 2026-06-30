@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 60vh;">
+  <div class="w-100 p-4 p-sm-5 bg-dark border border-secondary rounded-4" style="max-width: 420px;">
+    
+    <div class="text-center mb-4">
+      <h2 class="fw-bold text-white mb-1">Welcome Back</h2>
+    </div>
+    
+    {% if error %}
+    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger text-danger rounded-3 d-flex align-items-start gap-2 small p-3 mb-4" role="alert">
+      <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-0.5"></i>
+      <span class="fw-medium">{{ error }}</span>
+    </div>
+    {% endif %}
+    
+    <form method="POST" action="/auth/login">
+      
+      <div class="mb-3">
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Username</label>
+        <div class="input-group">
+          <span class="input-group-text bg-secondary bg-opacity-10 border-secondary text-muted px-3">
+            <i class="bi bi-person fs-5"></i>
+          </span>
+          <input type="text" 
+                 name="username" 
+                 placeholder="Enter username" 
+                 class="form-control form-control-lg bg-transparent border-secondary text-white small" 
+                 style="font-size: 0.9rem;"
+                 required 
+                 autofocus />
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-1.5">
+          <label class="form-label text-uppercase tracking-wider text-muted fw-semibold m-0" style="font-size: 0.75rem;">Password</label>
+          <a href="/auth/forgot-password" class="small text-primary text-decoration-none fw-medium">Forgot?</a>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text bg-secondary bg-opacity-10 border-secondary text-muted px-3">
+            <i class="bi bi-lock fs-5"></i>
+          </span>
+          <input type="password" 
+                 id="login-password"
+                 name="password" 
+                 placeholder="••••••••" 
+                 class="form-control form-control-lg bg-transparent border-secondary text-white small" 
+                 style="font-size: 0.9rem;"
+                 required />
+          <button type="button" 
+                  onclick="togglePasswordVisibility()"
+                  class="btn btn-outline-secondary border-secondary bg-secondary bg-opacity-10 text-muted px-3" 
+                  id="toggle-btn">
+            <i id="toggle-icon" class="bi bi-eye fs-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-4 d-flex align-items-center">
+        <div class="form-check">
+          <input type="checkbox" name="remember" id="remember-me" class="form-check-input rounded-1 border-secondary" />
+          <label for="remember-me" class="form-check-label small text-muted select-none">Remember this machine</label>
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold tracking-wide d-flex align-items-center justify-content-center gap-2 shadow-sm">
+          <span>Sign In</span>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </form>
+    
+    <div class="position-relative text-center my-4">
+      <hr class="text-secondary opacity-25 m-0" />
+      <span class="position-absolute top-50 start-50 translate-middle bg-dark px-3 text-uppercase tracking-widest text-muted fw-semibold" style="font-size: 0.65rem;">
+        New here?
+      </span>
+    </div>
+    
+    <div class="text-center">
+      <p class="small text-muted m-0">
+        Don't have an account yet? 
+        <a href="/auth/register" class="text-primary fw-bold text-decoration-none ms-1">Create account</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('login-password');
+    const toggleIcon = document.getElementById('toggle-icon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    }
+}
+</script>
+{% endblock %}

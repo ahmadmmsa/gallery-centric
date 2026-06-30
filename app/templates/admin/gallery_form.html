@@ -1,0 +1,163 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if gallery %}{{ gallery.title }} / Edit{% else %}New{% endif %} Gallery{% endblock %}
+
+{% block content %}
+
+<style>
+    h5 {
+        font-size: medium;
+        font-weight: 500;
+        padding: 0.5rem 0 0 0.5rem;
+    }
+</style>
+
+<div>
+    <form method="post" class="needs-validation">
+        <div class="row">
+            <div class="col-lg-6">
+                <h1>{% if gallery %}Edit Gallery{% else %}New Gallery{% endif %}</h1>
+            </div>
+            <div class="col-lg-6">
+                <div class="d-flex justify-content-end gap-2 mb-4">
+                    {% if gallery %}
+                    {% if gallery.is_published %}
+                    <button type="submit" class="btn btn-warning" formmethod="post"
+                        formaction="/admin/galleries/{{ gallery.id }}/unpublish">
+                        <i class="bi bi-eye-slash"></i> Unpublish
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success" formmethod="post"
+                        formaction="/admin/galleries/{{ gallery.id }}/publish">
+                        <i class="bi bi-cloud-upload"></i> Publish
+                    </button>
+                    {% endif %}
+                    <a href="/admin/galleries/{{ gallery.id }}/upload" class="btn btn-primary">Upload</a>
+                    <button type="submit" id="submit-btn" class="btn btn-primary">Save</button>
+                    {% else %}
+                    <button type="submit" id="submit-btn" class="btn btn-primary btn-lg">
+                        Create
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Title *</label>
+                            <input type="text" name="title" class="form-control text-light"
+                                value="{{ gallery.title if gallery else '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control text-light" rows="4">{{ gallery.description if gallery else '' }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Language</label>
+                            <select name="language_id" class="form-select text-light">
+                                <option value="">Select Language</option>
+                                {% for lang in languages %}
+                                <option value="{{ lang.id }}" {% if gallery and gallery.language_id==lang.id
+                                    %}selected{% endif %}>
+                                    {{ lang.name }} ({{ lang.code }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">SEO Title</label>
+                            <input type="text" name="seo_title" class="form-control text-light"
+                                value="{{ gallery.seo_title if gallery else '' }}">
+                            <small class="text-muted">Leave empty to use gallery title</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">SEO Description</label>
+                            <textarea name="seo_description" class="form-control text-light"
+                                rows="3">{{ gallery.seo_description if gallery else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <!-- Artists -->
+                <div class="card mb-4">
+                    <div>
+                        <h5>Artists</h5>
+                    </div>
+                    <div class="card-body">
+                        {% set type = "artist" %}
+                        {% set selected = gallery.artists if gallery else [] %}
+                        {% include "admin/components/tag_input.html" %}
+                    </div>
+                </div>
+
+                <!-- Characters -->
+                <div class="card mb-4">
+                    <div>
+                        <h5>Characters</h5>
+                    </div>
+                    <div class="card-body">
+                        {% set type = "character" %}
+                        {% set selected = gallery.characters if gallery else [] %}
+                        {% include "admin/components/tag_input.html" %}
+                    </div>
+                </div>
+
+                <!-- Parodies -->
+                <div class="card mb-4">
+                    <div>
+                        <h5>Parodies</h5>
+                    </div>
+                    <div class="card-body">
+                        {% set type = "parody" %}
+                        {% set selected = gallery.parodies if gallery else [] %}
+                        {% include "admin/components/tag_input.html" %}
+                    </div>
+                </div>
+
+                <!-- Custom Tags -->
+                <div class="card mb-4">
+                    <div>
+                        <h5>Tags</h5>
+                    </div>
+                    <div class="card-body">
+                        {% set type = "tag" %}
+                        {% set selected = gallery.tags if gallery else [] %}
+                        {% include "admin/components/tag_input.html" %}
+                    </div>
+                </div>
+
+                <!-- Gallery Info -->
+                {% if gallery %}
+
+
+                <div class="card">
+                    <div>
+                        <h5>Gallery Info</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-5">ID:</dt>
+                            <dd class="col-sm-7">{{ gallery.id }}</dd>
+
+                            <dt class="col-sm-5">Pages:</dt>
+                            <dd class="col-sm-7">{{ gallery.page_count }}</dd>
+
+                            <dt class="col-sm-5">Views:</dt>
+                            <dd class="col-sm-7">{{ gallery.view_count }}</dd>
+
+                            <dt class="col-sm-5">Created:</dt>
+                            <dd class="col-sm-7">{{ gallery.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+    </form>
+</div>
+
+{% endblock %}

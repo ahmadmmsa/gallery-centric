@@ -1,0 +1,46 @@
+<nav>
+  <div class="w-100 p-3">
+    <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 40px;">
+      <a class="navbar-brand fw-bold text-primary" href="/">{{ settings.SITE_NAME }}</a>
+      <form class="d-flex justify-content-between align-items-center gap-2 w-100" action="/search" method="get">
+        <input class="form-control text-light border-secondary" type="search" value="{{ q if q else '' }}"
+          name="q" placeholder="Search..." aria-label="Search" value="{{ q if q else '' }}" hx-get="/search"
+          hx-trigger="input changed delay:300ms, search" hx-target="#search-results" hx-push-url="true">
+        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
+        <button class="navbar-toggler x-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+                aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path class="burger-line top" d="M4 6h16" />
+            <path class="burger-line mid" d="M4 12h16" />
+            <path class="burger-line bot" d="M4 18h16" />
+            <path class="x-line left-to-right" d="M6 6l12 12" />
+            <path class="x-line right-to-left" d="M18 6L6 18" />
+          </svg>
+        </button>
+      </form>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        {% if request.state.user %}
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ request.state.user.username }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+              {% if request.state.user.is_admin %}
+              <li><a class="dropdown-item" href="/admin/"><i class="bi bi-gear"></i> Admin</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="/auth/logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+            </ul>
+          </div>
+        {% else %}
+        <div class="d-flex gap-2 text-nowrap">
+          <a href="/auth/login" class="btn btn-sm btn-primary"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+          <a href="/auth/register" class="btn btn-sm btn-primary"><i class="bi bi-person-plus"></i> Register</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="collapse navbar-collapse" id="navbarContent">
+      {% include 'partials/filter_sidebar.html' %}
+    </div>
+  </div>
+</nav>

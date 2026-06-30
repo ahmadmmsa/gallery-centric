@@ -1,0 +1,104 @@
+<!-- Pagination controls -->
+{% set base_qs = "" %}
+{% if q %}{% set base_qs = base_qs ~ "&q=" ~ q %}{% endif %}
+{% if tags %}{% set base_qs = base_qs ~ "&tags=" ~ tags %}{% endif %}
+{% if artists %}{% set base_qs = base_qs ~ "&artists=" ~ artists %}{% endif %}
+{% if characters %}{% set base_qs = base_qs ~ "&characters=" ~ characters %}{% endif %}
+{% if parodies %}{% set base_qs = base_qs ~ "&parodies=" ~ parodies %}{% endif %}
+{% if language %}{% set base_qs = base_qs ~ "&language=" ~ language %}{% endif %}
+{% if sort %}{% set base_qs = base_qs ~ "&sort=" ~ sort %}{% endif %}
+{% if per_page %}{% set base_qs = base_qs ~ "&per_page=" ~ per_page|string %}{% endif %}
+
+<nav aria-label="Page navigation" class="d-flex justify-content-center mt-4 mb-4">
+  <ul class="pagination">
+    {% if pagination.page > 1 %}
+    <li class="page-item">
+      <a class="page-link"
+        href="?page=1{{ base_qs }}"
+        hx-get="?page=1{{ base_qs }}"
+        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        <i class="bi bi-chevron-double-left"></i>
+      </a>
+    </li>
+    <li class="page-item">
+      <a class="page-link"
+        href="?page={{ pagination.page - 1 }}{{ base_qs }}"
+        hx-get="?page={{ pagination.page - 1 }}{{ base_qs }}"
+        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+    {% endif %}
+
+    {% set start = [1, pagination.page - 2]|max %}
+    {% set end = [pagination.total_pages, pagination.page + 2]|min %}
+
+    {% if start > 1 %}
+    <li class="page-item">
+      <a class="page-link"
+        href="?page=1{{ base_qs }}"
+        hx-get="?page=1{{ base_qs }}"
+        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        1
+      </a>
+    </li>
+    {% if start > 2 %}
+    <li class="page-item disabled"><span class="page-link">…</span></li>
+    {% endif %}
+    {% endif %}
+
+    {% for p in range(start, end + 1) %}
+    {% if p == pagination.page %}
+    <li class="page-item active" aria-current="page">
+      <span class="page-link">{{ p }} <span class="visually-hidden">(current)</span></span>
+    </li>
+    {% else %}
+    <li class="page-item">
+      <a class="page-link"
+        href="?page={{ p }}{{ base_qs }}"
+        hx-get="?page={{ p }}{{ base_qs }}"
+        hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+        {{ p }}
+      </a>
+    </li>
+    {% endif %}
+    {% endfor %}
+
+    {% if end < pagination.total_pages %} 
+      {% if end < pagination.total_pages - 1 %} 
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      <li class="page-item">
+        <a class="page-link"
+          href="?page={{ pagination.total_pages }}{{ base_qs }}"
+          hx-get="?page={{ pagination.total_pages }}{{ base_qs }}"
+          hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+          {{ pagination.total_pages }}
+        </a>
+      </li>
+    {% endif %}
+
+    {% if pagination.page < pagination.total_pages %} 
+      <li class="page-item">
+        <a class="page-link"
+          href="?page={{ pagination.page + 1 }}{{ base_qs }}"
+          hx-get="?page={{ pagination.page + 1 }}{{ base_qs }}"
+          hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+      <li class="page-item">
+        <a class="page-link"
+          href="?page={{ pagination.total_pages }}{{ base_qs }}"
+          hx-get="?page={{ pagination.total_pages }}{{ base_qs }}"
+          hx-target="#gallery-grid" hx-swap="innerHTML" hx-push-url="true">
+          <i class="bi bi-chevron-double-right"></i>
+        </a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+
+<div class="text-center small text-muted">
+  <p>Page {{ pagination.page }} of {{ pagination.total_pages }} ({{ pagination.total_items }} total items)</p>
+</div>

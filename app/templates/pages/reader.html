@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+
+{% block content %}
+<div>
+  <div class="progress mt-2" style="height: 3px;"><div id="progress-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%;"></div></div>
+  <!-- Top Bar -->
+  <div style="margin-bottom: 8px;">
+    <div class="w-100 d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><a href="/gallery/{{ gallery.slug }}" class="text-decoration-none">back to gallery</a></h5>
+      <div style="display: flex; gap: 5px; justify-content: space-between; align-items: center; margin-top: 8px;">
+        <a href="#" id="nav-first" title="First page"><i class="bi bi-chevron-bar-left"></i></a>
+        <a href="#" id="nav-prev" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+        <div style="display:flex; gap:5px; align-items: center; justify-content: center;">
+          <input type="number" min="1" max="{{ gallery.page_count }}" value="1" class="form-control form-control-sm"
+            id="current-page" style="width: 70px; text-align: center;">
+          / <span id="total-pages">{{ gallery.page_count }}</span>
+        </div>
+        <a href="#" id="nav-next" title="Next page"><i class="bi bi-chevron-right"></i></a>
+        <a href="#" id="nav-last" title="Last page"><i class="bi bi-chevron-bar-right"></i></a>
+      </div>
+      <div style="display: flex; gap: 5px; justify-content: center; align-items: center;">
+        <select name="gallery-mode" id="gallery-mode" class="form-select form-select-sm">
+          <option value="slideshow">Slideshow</option>
+          <option value="infinite-scroll">Infinite Scroll</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="reader-area px-0">
+    <div>
+      <div id="reader-images">
+        {% for page in pages %}
+        <div class="reader-page {% if loop.first %}active d-block{% else %}d-none{% endif %}"
+          data-page-number="{{ page.page_number }}" data-page-id="{{ page.id }}">
+          {% if page.image_path %}
+          <img src="{{ page.image_path }}" alt="Page {{ page.page_number }}" class="reader-image img-fluid" />
+          {% else %}
+          <div class="bg-secondary d-flex align-items-center justify-content-center" style="min-height: 500px;">
+            <span class="text-muted">Page {{ page.page_number }} - Image not found</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <button id="gototop"><i class="bi bi-arrow-up"></i></button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/reader.js"></script>
+{% endblock %}

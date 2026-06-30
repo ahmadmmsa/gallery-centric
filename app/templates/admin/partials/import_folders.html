@@ -1,0 +1,20 @@
+<div class="list-group">
+    {% if folders %}
+        {% for folder in folders %}
+            <button type="button" class="list-group-item list-group-item-action list-group-item-dark d-flex justify-content-between align-items-center"
+                hx-get="/admin/galleries/{{ gallery.id }}/upload-find/{{ folder.name }}"
+                hx-target="#importFolderContents"
+                hx-indicator="#importFolderContentsIndicator"
+                hx-swap="innerHTML">
+                <div class="text-truncate">
+                    <i class="bi bi-folder text-warning me-2"></i> {{ folder.name }}
+                </div>
+                <span class="badge bg-primary rounded-pill">{{ folder.image_count }} images</span>
+            </button>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-secondary mb-0 bg-dark text-light border-secondary">
+            <i class="bi bi-info-circle me-2"></i> No folders found in <code>/uploads/imports</code>.
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block head %}
+<!-- Include ALTCHA script locally as a module inside the head block -->
+<script src="/static/js/altcha.min.js" type="module"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Centering flex layout container -->
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 60vh;">
+  <div class="w-100 p-4 p-sm-5 bg-body-tertiary border border-secondary border-opacity-25 rounded-4" style="max-width: 420px;">
+    
+    <!-- Header / Title Segment -->
+    <div class="text-center mb-4">
+      <h2 class="fw-bold mb-1">Create Account</h2>
+    </div>
+
+    <!-- Error Alert Banner -->
+    {% if error %}
+    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-20 text-danger rounded-3 d-flex align-items-start gap-2 small p-3 mb-4" role="alert">
+      <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-0.5"></i>
+      <span class="fw-medium">{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Registration Form Wrapper -->
+    <form method="POST" action="/auth/register">
+      
+      <!-- Username Field Box -->
+      <div class="mb-3">
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Username</label>
+        <div class="input-group">
+          <span class="input-group-text bg-body border-secondary border-opacity-25 text-muted px-3">
+            <i class="bi bi-person fs-5"></i>
+          </span>
+          <input type="text" 
+                 name="username" 
+                 placeholder="Choose username" 
+                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25" 
+                 style="font-size: 0.9rem;"
+                 required 
+                 autofocus />
+        </div>
+      </div>
+
+      <!-- Email Field Box -->
+      <div class="mb-3">
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Email Address</label>
+        <div class="input-group">
+          <span class="input-group-text bg-body border-secondary border-opacity-25 text-muted px-3">
+            <i class="bi bi-envelope fs-5"></i>
+          </span>
+          <input type="email" 
+                 name="email" 
+                 placeholder="name@example.com" 
+                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25" 
+                 style="font-size: 0.9rem;"
+                 required />
+        </div>
+      </div>
+      
+      <!-- Password Field Box -->
+      <div class="mb-4">
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Password</label>
+        <div class="input-group">
+          <span class="input-group-text bg-body border-secondary border-opacity-25 text-muted px-3">
+            <i class="bi bi-lock fs-5"></i>
+          </span>
+          <input type="password" 
+                 id="register-password"
+                 name="password" 
+                 placeholder="••••••••" 
+                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25" 
+                 style="font-size: 0.9rem;"
+                 required 
+                 minlength="8" />
+          <!-- Suffix interactive hidden masking toggle -->
+          <button type="button" 
+                  onclick="togglePasswordVisibility()"
+                  class="btn btn-outline-secondary border-secondary border-opacity-25 bg-body text-muted px-3" 
+                  id="toggle-btn">
+            <i id="toggle-icon" class="bi bi-eye fs-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Proof of Work ALTCHA Element -->
+      <div class="mb-4 text-center">
+        <altcha-widget 
+          challengeurl="/auth/altcha-challenge"
+          class="d-inline-block w-100"
+          style="--altcha-max-width: 100%;"
+          hidefooter>
+        </altcha-widget>
+      </div>
+      
+      <!-- Action Registration Trigger -->
+      <div class="mb-4">
+        <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold tracking-wide d-flex align-items-center justify-content-center gap-2 shadow-sm">
+          <span>Register</span>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </form>
+    
+    <!-- Decorative Visual Separator Line -->
+    <div class="position-relative text-center my-4">
+      <hr class="text-secondary opacity-25 m-0" />
+      <span class="position-absolute top-50 start-50 translate-middle bg-body-tertiary px-3 text-uppercase tracking-widest text-muted fw-semibold" style="font-size: 0.65rem;">
+        Existing User?
+      </span>
+    </div>
+    
+    <!-- Login Route Fallback Navigation Link -->
+    <div class="text-center">
+      <p class="small text-muted m-0">
+        Already have an account? 
+        <a href="/auth/login" class="text-primary fw-bold text-decoration-none ms-1">Login</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Password String Plaintext Toggle Script -->
+<script>
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('register-password');
+    const toggleIcon = document.getElementById('toggle-icon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gallery_centric_app
+    depends_on:
+      gallerydb:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://galleryusername:gallerypassword@gallerydb/gallery_centric}
+      SECRET_KEY: ${SECRET_KEY:-your_secret_key}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      UPLOAD_DIR: ${UPLOAD_DIR:-uploads}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-500}
+      SITE_NAME: ${SITE_NAME:-GalleryCentric}
+      BASE_URL: ${BASE_URL:-http://localhost:8008}
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./app:/app/app
+      - ./uploads:/app/uploads
+      - ./migrations:/app/migrations
+      - ./alembic.ini:/app/alembic.ini
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8008/docs')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - gallery_centric_network
+    restart: unless-stopped
+
+  gallerydb:
+    image: pgvector/pgvector:pg18
+    container_name: gallery_centric_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=galleryusername
+      - POSTGRES_PASSWORD=gallerypassword
+    volumes:
+      - pgdata:/var/lib/postgresql/18/docker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U galleryusername -d gallery_centric"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - gallery_centric_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: gallery_centric_nginx
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./app/static:/app/static:ro
+    networks:
+      - gallery_centric_network
+    restart: unless-stopped
+    profiles:
+      - production
+
+networks:
+  gallery_centric_network:
+    driver: bridge
+
+volumes:
+  pgdata:

@@ -1,0 +1,62 @@
+{% if total_duplicates == 0 %}
+<div
+    class="alert alert-success py-2 px-3 small border border-success border-opacity-25 bg-success bg-opacity-10 d-flex align-items-center mb-0">
+    <i class="bi bi-check-circle-fill me-2 fs-5 text-success"></i>
+    <span>No duplicate images found.</span>
+</div>
+{% else %}
+<div class="alert alert-warning py-2 px-3 small border border-warning border-opacity-25 bg-warning bg-opacity-10 mb-3">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning"></i>
+        <span>Found <strong>{{ total_duplicates }}</strong> duplicate page(s). Review them below before removing.</span>
+    </div>
+</div>
+
+<div class="card bg-black bg-opacity-20 border border-secondary mb-3">
+    <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+        {% for group in duplicate_groups %}
+        <div
+            class="d-flex align-items-center gap-3 p-2 border-bottom border-secondary border-opacity-50 {% if loop.last %}border-bottom-0{% endif %}">
+            <!-- Original Image -->
+            <div class="text-center" style="width: 80px; flex-shrink: 0;">
+                <span class="badge bg-success mb-1 small d-block">Keep #{{ group.original.page_number }}</span>
+                <div style="width: 70px; height: 90px; overflow: hidden; border-radius: 4px; border: 1px solid #198754;"
+                    class="mx-auto">
+                    <img src="{% if group.original.thumbnail_path %}{{ group.original.thumbnail_path }}{% else %}{{ group.original.image_path }}{% endif %}"
+                        style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+            </div>
+
+            <i class="bi bi-arrow-right fs-4 text-muted"></i>
+
+            <!-- Duplicate Images -->
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                {% for dup in group.duplicates %}
+                <div class="text-center" style="width: 80px;">
+                    <span class="badge bg-danger mb-1 small d-block">Dup #{{ dup.page_number }}</span>
+                    <div style="width: 70px; height: 90px; overflow: hidden; border-radius: 4px; border: 1px solid #dc3545;"
+                        class="mx-auto position-relative">
+                        <img src="{% if dup.thumbnail_path %}{{ dup.thumbnail_path }}{% else %}{{ dup.image_path }}{% endif %}"
+                            style="width: 100%; height: 100%; object-fit: cover;">
+                        <div
+                            class="position-absolute top-0 start-0 w-100 h-100 bg-danger bg-opacity-10 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-trash-fill text-danger fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="d-grid">
+    <button class="btn btn-danger" hx-post="/admin/galleries/{{ gallery.id }}/deduplicate/remove"
+        hx-confirm="Are you sure you want to delete all {{ total_duplicates }} duplicate images? This action cannot be undone."
+        data-confirm-title="Delete Duplicate Images" data-confirm-text="Delete All Duplicates"
+        data-confirm-class="btn-danger" hx-disabled-elt="this">
+        <i class="bi bi-trash-fill me-2"></i> Delete All {{ total_duplicates }} Duplicates
+    </button>
+</div>
+{% endif %}

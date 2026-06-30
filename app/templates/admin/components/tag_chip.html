@@ -1,0 +1,25 @@
+<span class="badge bg-primary me-2 mb-2 d-inline-flex align-items-center"
+    style="font-size: 0.9em; padding: 0.3em 0.5em;">
+    {{ item.name }}
+
+    <button type="button" class="btn-close btn-close-white ms-2" style="font-size: .5rem"
+        onclick="this.parentElement.remove()">
+    </button>
+
+    <input type="hidden" name="{{ field_name if field_name else type + '_ids' }}" value="{{ item.id }}">
+</span>
+{% if clear_input %}
+<script>
+    (function () {
+        var searchInput = document.getElementById('{{ type }}-search');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        var resultsDiv = document.getElementById('{{ type }}-results');
+        if (resultsDiv) {
+            resultsDiv.innerHTML = '';
+        }
+    })();
+</script>
+{% endif %}

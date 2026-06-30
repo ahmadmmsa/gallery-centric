@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Gallery List - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-4">
+        <h1 class="mb-0">Galleries</h1>
+    </div>
+    <div class="col-md-4 mt-3 mt-md-0">
+        <form action="/admin/galleries" method="get" class="d-flex">
+            <input type="search" name="q" class="form-control me-2" placeholder="Search galleries..." value="{{ q or '' }}">
+            <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <a href="/admin/galleries/new" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> New Gallery
+        </a>
+    </div>
+</div>
+
+{% include 'admin/partials/gallery_card.html' %}
+
+<!-- Pagination -->
+<div class="mt-4">
+    {% include 'partials/pagination.html' %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+
+{% block content %}
+<div class="w-100">
+  <!-- Main content row -->
+  <div class="row">
+    <!-- Gallery grid -->
+      {% include 'partials/gallery_grid.html' %}
+    <!-- Pagination -->
+    {% include 'partials/pagination.html' %}
+  </div>
+</div>
+
+{% endblock %}

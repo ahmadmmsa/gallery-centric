@@ -1,0 +1,36 @@
+<!-- Gallery grid container (HTMX target) -->
+<div id="gallery-grid" class="gallery-grid">
+  {% for gallery in galleries %}
+    <div class="gallery-card">
+      <a href="/gallery/{{ gallery.slug }}" class="text-decoration-none" title="{{ gallery.title }}">
+        <div class="card-image-wrapper position-relative overflow-hidden" style="aspect-ratio: 3/4;">
+          {% if gallery.thumbnail_path %}
+          <img src="{{ gallery.thumbnail_path }}" alt="{{ gallery.title }}"
+            class="img-fluid object-fit-cover gallery-thumb" loading="lazy" style="object-fit: cover;">
+          {% else %}
+          <div class="bg-secondary w-100 h-100 d-flex align-items-center justify-content-center">
+            <i class="bi bi-image text-muted"></i>
+          </div>
+          {% endif %}
+          <div class="position-absolute bottom-0 end-0 p-3 ">
+            <h1 class="text-white" 
+            style="font-size: 1rem; font-weight: bold; -webkit-text-stroke: 12px rgb(29, 29, 29); 
+            paint-order: stroke fill;
+             padding-bottom: 40px;">{{ gallery.title[:100] }}</h1>
+          </div>
+          <div class="badge bg-dark position-absolute bottom-0 start-0 m-2">
+            <i class="bi bi-file-image"></i> {{ gallery.page_count }}
+          </div>
+          <div class="badge bg-dark position-absolute bottom-0 end-0 m-2">
+            <span><i class="bi bi-heart"></i> {{ gallery.favorite_count }}</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  {% endfor %}
+</div>
+{% if not galleries %}
+<div class="text-center m-4">
+  <p>No galleries found. Try adjusting your filters or search terms.</p>
+</div>
+{% endif %}

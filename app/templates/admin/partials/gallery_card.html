@@ -1,0 +1,95 @@
+<div class="row g-2" id="gallery-grid">
+    {% for gallery in galleries %}
+    <div class="col-12 col-xl-6">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body p-2 d-flex gap-2">
+                <div class="flex-shrink-0">
+                    <img src="{{ gallery.thumbnail_path }}" alt="{{ gallery.title }}" class="rounded border border-secondary" style="width: 80px; height: 110px; object-fit: cover;" loading="lazy">
+                </div>
+                <div class="flex-grow-1 d-flex flex-column min-w-0">
+                    <div class="d-flex justify-content-between align-items-start mb-1 gap-2">
+                        <h6 class="mb-0 text-truncate fw-bold">
+                            <a href="/admin/galleries/{{ gallery.id }}/edit" class="text-decoration-none text-light" title="{{ gallery.title }}">
+                                {{ gallery.title }}
+                            </a>
+                        </h6>
+                        <div class="d-flex gap-1 flex-shrink-0">
+                            {% if gallery.is_published %}
+                                <span class="badge bg-success text-white" style="font-size: 0.7rem;">
+                                    <i class="bi bi-check-circle me-1"></i>Published
+                                </span>
+                                <a href="/gallery/{{ gallery.slug }}" target="_blank" class="badge bg-secondary text-white text-decoration-none" title="View Live">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            {% else %}
+                                <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Draft
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-secondary mb-2" style="font-size: 0.75rem;">
+                        {% if gallery.language %}
+                        <span class="me-3"><i class="bi bi-globe"></i> {{ gallery.language.name }}</span>
+                        {% endif %}
+                        {% if gallery.published_date %}
+                        <span><i class="bi bi-calendar"></i> {{ gallery.published_date.strftime('%Y-%m-%d') }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-2 d-flex flex-wrap gap-1" style="font-size: 0.7rem;">
+                        {% if gallery.artists %}
+                            <span class="text-secondary border-end border-secondary pe-1 me-1">artist</span>
+                            {% for artist in gallery.artists %}
+                            <a href="/tags/?artist:{{ artist.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ artist.name }}</a>
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if gallery.characters %}
+                            <span class="text-secondary border-end border-secondary pe-1 me-1 ms-1">characters</span>
+                            {% for character in gallery.characters %}
+                            <a href="/tags/?character:{{ character.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ character.name }}</a>
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if gallery.parodies %}
+                            <span class="text-secondary border-end border-secondary pe-1 me-1 ms-1">parodies</span>
+                            {% for parody in gallery.parodies %}
+                            <a href="/tags/?parody:{{ parody.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ parody.name }}</a>
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if gallery.tags %}
+                            <span class="text-secondary border-end border-secondary pe-1 me-1 ms-1">tags</span>
+                            {% for tag in gallery.tags %}
+                            <a href="/tags/?{{ tag.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ tag.name }}</a>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-1">
+                            <a href="/admin/galleries/{{ gallery.id }}/upload" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Upload Pages">
+                                <i class="bi bi-upload" style="font-size: 0.8rem; color:white;"></i>
+                            </a>
+                            <a href="/admin/galleries/{{ gallery.id }}/edit" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit Gallery">
+                                <i class="bi bi-pencil" style="font-size: 0.8rem; color:white;"></i>
+                            </a>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-2 border-0" 
+                            hx-post="/admin/galleries/{{ gallery.id }}/delete"
+                            hx-confirm="Delete gallery '{{ gallery.title }}'?"
+                            data-confirm-title="Delete Gallery" 
+                            data-confirm-text="Delete" 
+                            data-confirm-class="btn-danger"
+                            title="Delete Gallery">
+                            <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+
+{% block content %}
+<div class="container-lg">
+  <div class="row mb-4">
+    <div class="col-lg-8">
+      <h2><i class="bi bi-person"></i> {{ artist.name }}</h2>
+      {% if artist.bio %}
+        <p class="text-muted">{{ artist.bio }}</p>
+      {% endif %}
+      <p><small class="text-muted"><strong>{{ artist.gallery_count }}</strong> galleries by this artist</small></p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Filter sidebar -->
+    <aside class="col-lg-3 mb-4">
+      <div class="card bg-dark border-secondary">
+        <div class="card-header bg-secondary">
+          <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+        </div>
+        <div class="card-body">
+          <form hx-get="/artist/{{ artist.slug }}" hx-target="#gallery-grid" hx-push-url="true" hx-swap="innerHTML">
+            <div class="mb-3">
+              <label class="form-label fw-bold small">Sort By</label>
+              <select name="sort" class="form-select form-select-sm bg-dark text-light border-secondary">
+                <option value="latest">Latest</option>
+                <option value="views">Most Viewed</option>
+                <option value="favorites">Most Favorited</option>
+              </select>
+            </div>
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+              <a href="/artist/{{ artist.slug }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Gallery grid -->
+    <div class="col-lg-9">
+      {% include 'partials/gallery_grid.html' %}
+      
+      <!-- Pagination -->
+      {% include 'partials/pagination.html' %}
+    </div>
+  </div>
+</div>
+{% endblock %}

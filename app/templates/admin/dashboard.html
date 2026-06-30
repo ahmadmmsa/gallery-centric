@@ -1,0 +1,280 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2>Dashboard</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-2">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Total Galleries</small>
+                        <h3 class="mb-0">{{ stats.total_galleries }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Published</small>
+                        <h3 class="mb-0">{{ stats.published_galleries }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Total Pages</small>
+                        <h3 class="mb-0">{{ stats.total_pages }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-2">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Artists</small>
+                        <h3 class="mb-0">{{ stats.total_artists }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Characters</small>
+                        <h3 class="mb-0">{{ stats.total_characters }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Parodies</small>
+                        <h3 class="mb-0">{{ stats.total_parodies }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Custom Tags</small>
+                        <h3 class="mb-0">{{ stats.total_tags }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if popular_tags %}
+    <div class="col-md-3 mb-2">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <small>Popular Tags</small>
+                    {% for tag in stats.popular_tags %}
+                    <a href="/admin/tags/{{ tag.name }}" class="btn btn-sm btn-outline-light"
+                        style="background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);">
+                        {{ tag.name }}
+                        <span class="badge bg-secondary ms-1">{{ tag.usage_count }}</span>
+                    </a>
+                    {% else %}
+                    <p class="text-muted">No tags found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% if empty_galleries %}
+<div class="row mb-2 mt-4">
+    <div class="d-flex gap-4">
+        <h4 class="text-danger"><i class="bi bi-exclamation-triangle"></i> Needs Attention (Empty Galleries)</h4>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card bg-dark border-danger">
+            <ul class="list-group list-group-flush">
+                {% for gallery in empty_galleries %}
+                <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
+                    <span>
+                        <strong>{{ gallery.title | truncate(60) }}</strong>
+                        <small class="text-muted ms-2">{{ gallery.slug }}</small>
+                    </span>
+                    <a href="/admin/galleries/{{ gallery.id }}/upload" class="btn btn-sm btn-danger">Upload Pages</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-2 mt-4">
+    <div class="d-flex gap-4">
+        <h4>Top Galleries</h4>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card bg-dark border-secondary">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Title</th>
+                            <th>Pages</th>
+                            <th>Tags Count</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gallery in top_galleries %}
+                        <tr>
+                            <td>
+                                <strong>{{ gallery.title | truncate(50) }}</strong>
+                            </td>
+                            <td>{{ gallery.page_count }}</td>
+                            <td><span class="badge bg-info text-dark">{{ gallery.tags|length }} Tags</span></td>
+                            <td>
+                                {% if gallery.is_published %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Published</span>
+                                {% else %}
+                                <span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> Draft</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/admin/galleries/{{ gallery.id }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-2 mt-4">
+    <div class="d-flex gap-4 align-items-center">
+        <h4>Recent Galleries</h4>
+        <a href="/admin/galleries/new">New Gallery</a>
+        <a href="/admin/galleries">View All</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-dark border-secondary">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Title</th>
+                            <th>Pages</th>
+                            <th>Tags</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gallery in recent_galleries %}
+                        <tr>
+                            <td>
+                                <strong>{{ gallery.title | truncate(40) }}</strong>
+                                <br>
+                                <small class="text-muted">{{ gallery.slug }}</small>
+                            </td>
+                            <td>{{ gallery.page_count }}</td>
+                            <td>
+                                {% for tag in gallery.tags[:3] %}
+                                <span class="badge"
+                                    style="background-color: {{ tag.color if tag.color else '#6c757d' }};">{{ tag.name
+                                    }}</span>
+                                {% endfor %}
+                                {% if gallery.tags|length > 3 %}
+                                <span class="badge bg-secondary">+{{ gallery.tags|length - 3 }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if gallery.is_published %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Published</span>
+                                {% else %}
+                                <span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> Draft</span>
+                                {% endif %}
+                            </td>
+                            <td><small>{{ gallery.created_at.strftime('%Y-%m-%d') }}</small></td>
+                            <td>
+                                <a href="/admin/galleries/{{ gallery.id }}/edit"
+                                    class="btn btn-sm btn-outline-primary">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5 mb-4">
+    <div class="col-md-12">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"> System Maintenance</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Run the cleanup process to fix broken database records and delete orphaned files left behind by deleted galleries or interrupted uploads.
+                </p>
+                <div id="maintenance-result">
+                    <button class="btn btn-warning" 
+                            hx-post="/admin/maintenance/cleanup?execute=false" 
+                            hx-target="#maintenance-result" 
+                            hx-swap="outerHTML">
+                        Run System Cleanup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

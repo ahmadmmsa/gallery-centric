@@ -1,0 +1,304 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Tag Manager - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-tag"></i> Tags</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTagModal">
+            <i class="bi bi-plus-lg"></i> New Tag
+        </button>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover mb-0">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Slug</th>
+                    <th>Description</th>
+                    <th>Visible</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag in tags %}
+                    <tr>
+                        <td>
+                            <span class="badge" style="background-color: {{ tag.tag_type.color if tag.tag_type else '#6c757d' }};">
+                                {{ tag.name }}
+                            </span>
+                        </td>
+                        <td>{{ tag.tag_type.name if tag.tag_type else '-' }}</td>
+                        <td><code>{{ tag.slug }}</code></td>
+                        <td>{{ tag.description | truncate(40) if tag.description else '-' }}</td>
+                        <td>
+                            {% if tag.is_visible %}
+                                <i class="bi bi-check-circle text-success"></i>
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" data-bs-target="#editTagModal"
+                                    data-tag-id="{{ tag.id }}" data-tag-name="{{ tag.name }}" 
+                                    data-tag-slug="{{ tag.slug }}" data-tag-type="{{ tag.tag_type.name if tag.tag_type else '' }}"
+                                    data-tag-description="{{ tag.description if tag.description else '' }}"
+                                    data-tag-visible="{{ 'true' if tag.is_visible else 'false' }}"
+                                    title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    hx-post="/admin/tags/{{ tag.id }}/delete"
+                                    hx-confirm="Are you sure you want to delete the tag '{{ tag.name }}'?"
+                                    data-confirm-title="Delete Tag"
+                                    data-confirm-text="Delete"
+                                    data-confirm-class="btn-danger"
+                                    title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- New Tag Modal -->
+<div class="modal fade" id="newTagModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">New Tag</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/admin/tags/new">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tag Name *</label>
+                        <input type="text" name="name" id="newTagName" class="form-control bg-dark text-light border-secondary" required>
+                        <div id="newTagNameFeedback" class="mt-1"></div>
+                    </div>
+                    <div class="mb-3 position-relative">
+                        <label class="form-label">Type *</label>
+                        <input type="text" name="tag_type" id="newTagType" class="form-control bg-dark text-light border-secondary autocomplete-input" data-autocomplete-type="tag-type" autocomplete="off" required>
+                        <div class="dropdown-menu bg-dark border-secondary w-100 autocomplete-suggestions shadow-lg" style="display: none; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control bg-dark text-light border-secondary" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Tag</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Tag Modal -->
+<div class="modal fade" id="editTagModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Edit Tag</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editTagForm" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tag Name *</label>
+                        <input type="text" name="name" id="editTagName" class="form-control bg-dark text-light border-secondary" required>
+                        <div id="editTagNameFeedback" class="mt-1"></div>
+                    </div>
+                    <div class="mb-3 position-relative">
+                        <label class="form-label">Type *</label>
+                        <input type="text" name="tag_type" id="editTagType" class="form-control bg-dark text-light border-secondary autocomplete-input" data-autocomplete-type="tag-type" autocomplete="off" required>
+                        <div class="dropdown-menu bg-dark border-secondary w-100 autocomplete-suggestions shadow-lg" style="display: none; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" id="editTagDescription" class="form-control bg-dark text-light border-secondary" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_visible" id="editTagVisible" class="form-check-input" value="true">
+                            <label class="form-check-label">Visible</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .autocomplete-suggestions .dropdown-item:hover {
+        background-color: var(--bs-primary) !important;
+        color: white !important;
+    }
+</style>
+<script>
+    let currentEditingTagId = null;
+    const editTagModal = document.getElementById('editTagModal');
+    if (editTagModal) {
+        editTagModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const tagId = button.getAttribute('data-tag-id');
+            currentEditingTagId = tagId;
+            const tagName = button.getAttribute('data-tag-name');
+            const tagType = button.getAttribute('data-tag-type');
+            const tagDescription = button.getAttribute('data-tag-description');
+            const tagVisible = button.getAttribute('data-tag-visible') === 'true';
+            
+            const form = editTagModal.querySelector('form');
+            form.action = `/admin/tags/${tagId}/edit`;
+            
+            document.getElementById('editTagName').value = tagName;
+            document.getElementById('editTagType').value = tagType;
+            document.getElementById('editTagDescription').value = tagDescription;
+            document.getElementById('editTagVisible').checked = tagVisible;
+
+            document.getElementById('editTagNameFeedback').innerHTML = '';
+        });
+    }
+
+    const newTagModal = document.getElementById('newTagModal');
+    if (newTagModal) {
+        newTagModal.addEventListener('show.bs.modal', function () {
+            document.getElementById('newTagNameFeedback').innerHTML = '';
+        });
+    }
+
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    const checkTagNameAvailability = async (nameInput, typeInput, feedbackDiv, currentId = null) => {
+        const name = nameInput.value.trim();
+        const tagType = typeInput.value.trim();
+        if (!name) {
+            feedbackDiv.innerHTML = '';
+            return;
+        }
+        
+        try {
+            let url = `/admin/tags/check_name?name=${encodeURIComponent(name)}&tag_type=${encodeURIComponent(tagType)}`;
+            if (currentId) {
+                url += `&current_id=${currentId}`;
+            }
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.available) {
+                feedbackDiv.innerHTML = `<span class="text-success small">${data.message}</span>`;
+            } else {
+                feedbackDiv.innerHTML = `<span class="text-danger small">${data.message}</span>`;
+            }
+        } catch (err) {
+            console.error('Check tag name error:', err);
+        }
+    };
+
+    const debouncedCheckNew = debounce(() => {
+        const nameInput = document.getElementById('newTagName');
+        const typeInput = document.getElementById('newTagType');
+        const feedbackDiv = document.getElementById('newTagNameFeedback');
+        checkTagNameAvailability(nameInput, typeInput, feedbackDiv);
+    }, 400);
+
+    const debouncedCheckEdit = debounce(() => {
+        const nameInput = document.getElementById('editTagName');
+        const typeInput = document.getElementById('editTagType');
+        const feedbackDiv = document.getElementById('editTagNameFeedback');
+        checkTagNameAvailability(nameInput, typeInput, feedbackDiv, currentEditingTagId);
+    }, 400);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputs = document.querySelectorAll('.autocomplete-input');
+
+        inputs.forEach(input => {
+            const suggestionsContainer = input.nextElementSibling;
+            const type = input.getAttribute('data-autocomplete-type');
+
+            input.addEventListener('input', async (e) => {
+                const val = e.target.value.trim();
+
+                if (val.length < 1) {
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+
+                try {
+                    const typeParam = type ? `&type=${type}` : '';
+                    const res = await fetch(`/api/tags/autocomplete?q=${encodeURIComponent(val)}${typeParam}`);
+                    const suggestions = await res.json();
+
+                    if (suggestions.length === 0) {
+                        suggestionsContainer.style.display = 'none';
+                        return;
+                    }
+
+                    suggestionsContainer.innerHTML = '';
+                    suggestions.forEach(item => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'dropdown-item text-light bg-dark border-0 py-2 px-3 text-start w-100';
+                        btn.style.outline = 'none';
+                        btn.textContent = item.value;
+
+                        btn.addEventListener('click', () => {
+                            input.value = item.value;
+                            suggestionsContainer.style.display = 'none';
+                            input.dispatchEvent(new Event('input'));
+                            input.focus();
+                        });
+
+                        suggestionsContainer.appendChild(btn);
+                    });
+
+                    suggestionsContainer.style.display = 'block';
+                } catch (err) {
+                    console.error('Autocomplete error:', err);
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target !== input && e.target !== suggestionsContainer && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        });
+
+        const newTagNameEl = document.getElementById('newTagName');
+        const newTagTypeEl = document.getElementById('newTagType');
+        if (newTagNameEl) newTagNameEl.addEventListener('input', debouncedCheckNew);
+        if (newTagTypeEl) newTagTypeEl.addEventListener('input', debouncedCheckNew);
+
+        const editTagNameEl = document.getElementById('editTagName');
+        const editTagTypeEl = document.getElementById('editTagType');
+        if (editTagNameEl) editTagNameEl.addEventListener('input', debouncedCheckEdit);
+        if (editTagTypeEl) editTagTypeEl.addEventListener('input', debouncedCheckEdit);
+    });
+</script>
+{% endblock %}
