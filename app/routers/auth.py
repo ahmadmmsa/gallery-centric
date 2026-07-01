@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from datetime import timedelta
@@ -21,6 +20,8 @@ from app.utils.auth import (
     verify_password
 )
 from app.utils.seo import get_default_seo
+from app.utils.templates import templates
+from app.services import runtime_config
 from app.config import settings
 
 def _set_auth_cookie(response: Response, username: str) -> Response:
@@ -40,9 +41,6 @@ def _set_auth_cookie(response: Response, username: str) -> Response:
     return response
 
 router = APIRouter(tags=["auth"])
-templates = Jinja2Templates(directory="app/templates")
-from app.config import settings
-templates.env.globals["settings"] = settings
 
 ALTCHA_CHALLENGE_TTL_SECONDS = 300
 
@@ -56,7 +54,7 @@ def get_challenge():
     salt = f"{secrets.token_hex(12)}?expires={expires}"
     secret_number = secrets.randbelow(100000)
     challenge = hashlib.sha256(f"{salt}{secret_number}".encode()).hexdigest()
-    signature = hmac.new(settings.ALTCHA_HMAC_KEY.encode(), challenge.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(runtime_config.altcha_hmac_key().encode(), challenge.encode(), hashlib.sha256).hexdigest()
     return {
         "algorithm": "SHA-256",
         "challenge": challenge,
@@ -124,7 +122,7 @@ async def register(
     try:
         decoded = base64.b64decode(altcha).decode('utf-8')
         data = json.loads(decoded)
-        expected_sig = hmac.new(settings.ALTCHA_HMAC_KEY.encode(), data['challenge'].encode(), hashlib.sha256).hexdigest()
+        expected_sig = hmac.new(runtime_config.altcha_hmac_key().encode(), data['challenge'].encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected_sig, data['signature']):
             raise ValueError("Invalid signature")
         hash_check = hashlib.sha256(f"{data['salt']}{data['number']}".encode()).hexdigest()
@@ -173,3 +171,52 @@ async def logout():
     res = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     res.delete_cookie("access_token", samesite="lax", secure=settings.BASE_URL.startswith("https"))
     return res
+
+
+@router.get("/change-password", response_class=HTMLResponse)
+async def change_password_page(request: Request):
+    if not request.state.user:
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse(request, "auth/change_password.html", {
+        "request": request,
+        "seo": get_default_seo("Change Password"),
+        "settings": settings,
+        "forced": bool(getattr(request.state.user, "must_change_password", False)),
+    })
+
+
+@router.post("/change-password")
+async def change_password(
+    request: Request,
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    if not request.state.user:
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+
+    ctx = {
+        "request": request,
+        "seo": get_default_seo("Change Password"),
+        "settings": settings,
+        "forced": bool(getattr(request.state.user, "must_change_password", False)),
+    }
+    error = None
+    if len(new_password) < 8:
+        error = "Password must be at least 8 characters."
+    elif new_password != confirm_password:
+        error = "Passwords do not match."
+    if error:
+        ctx["error"] = error
+        return templates.TemplateResponse(request, "auth/change_password.html", ctx, status_code=status.HTTP_400_BAD_REQUEST)
+
+    # Re-fetch the user in this session (request.state.user is detached).
+    user = (await db.execute(select(User).where(User.username == request.state.user.username))).scalars().first()
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+    user.hashed_password = get_password_hash(new_password)
+    user.must_change_password = False
+    await db.commit()
+
+    res = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    return _set_auth_cookie(res, user.username)

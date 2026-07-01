@@ -1,7 +1,6 @@
 from typing import Optional, Any
 from fastapi import APIRouter, Request, Depends, Query, Header
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 from sqlalchemy.orm import selectinload
@@ -16,11 +15,9 @@ from app.services import search_service
 from app.utils.pagination import Pagination
 from app.utils.seo import get_gallery_seo, get_default_seo
 from app.utils.db_utils import safe_execute_all, safe_execute_first
-from app.config import settings
+from app.utils.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-templates.env.globals["settings"] = settings
 
 def _render_404(request: Request) -> templates.TemplateResponse:
     return templates.TemplateResponse(request, "pages/404.html", {"request": request, "seo": get_default_seo("Not Found")}, status_code=404)

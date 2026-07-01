@@ -3,18 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ request.state.csrf_token }}">
     <title>{% block title %}{{ seo.title }}{% endblock %}</title>
     <meta name="description" content="{{ seo.description }}">
+    {% if setting('SEO_KEYWORDS') %}<meta name="keywords" content="{{ setting('SEO_KEYWORDS') }}">{% endif %}
+    <meta name="robots" content="{{ setting('SEO_ROBOTS') or 'index, follow' }}">
+    {% if setting('SEO_THEME_COLOR') %}<meta name="theme-color" content="{{ setting('SEO_THEME_COLOR') }}">{% endif %}
+    <link rel="canonical" href="{{ seo.url }}">
+
+    {# Open Graph -- Facebook, Snapchat, WhatsApp, LinkedIn, Discord all read these #}
+    <meta property="og:type" content="website">
     <meta property="og:title" content="{{ seo.title }}">
     <meta property="og:description" content="{{ seo.description }}">
-    {% if seo.image %}
-    <meta property="og:image" content="{{ seo.image }}">
-    {% endif %}
-    <link rel="canonical" href="{{ seo.url }}">
+    <meta property="og:url" content="{{ seo.url }}">
+    <meta property="og:site_name" content="{{ setting('SEO_OG_SITE_NAME') or setting('SITE_NAME') }}">
+    {% set og_image = seo.image or setting('SEO_DEFAULT_IMAGE') %}
+    {% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
+    {% if setting('SEO_FB_APP_ID') %}<meta property="fb:app_id" content="{{ setting('SEO_FB_APP_ID') }}">{% endif %}
+    {% if setting('SEO_FB_PAGES') %}<meta property="fb:pages" content="{{ setting('SEO_FB_PAGES') }}">{% endif %}
+
+    {# Twitter / X #}
+    <meta name="twitter:card" content="{{ setting('SEO_TWITTER_CARD') or 'summary_large_image' }}">
+    {% if setting('SEO_TWITTER_SITE') %}<meta name="twitter:site" content="{{ setting('SEO_TWITTER_SITE') }}">{% endif %}
+    {% if setting('SEO_TWITTER_CREATOR') %}<meta name="twitter:creator" content="{{ setting('SEO_TWITTER_CREATOR') }}">{% endif %}
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/static/css/main.css">
     <script src="/static/js/htmx.min.js"></script>
+    <script>
+        // Attach the CSRF token to every HTMX request.
+        document.addEventListener('htmx:configRequest', function (evt) {
+            var m = document.querySelector('meta[name="csrf-token"]');
+            if (m) evt.detail.headers['X-CSRF-Token'] = m.getAttribute('content');
+        });
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body>

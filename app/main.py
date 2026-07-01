@@ -1,53 +1,95 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
-from app.routers import frontend, admin, auth
+from fastapi.responses import RedirectResponse
+from app.routers import frontend, admin, auth, setup
 from app.config import settings
 import os
 from sqlalchemy import exc as sa_exc
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from fastapi.templating import Jinja2Templates
+from app.utils.templates import templates
 from app.utils.seo import get_default_seo
+from app.utils.csrf import verify_csrf, generate_csrf_token, CSRF_COOKIE_NAME
+from app.utils.deps import load_current_user, PasswordChangeRequired, SetupRequired
+from app.services import runtime_config
 
-app = FastAPI(title=settings.SITE_NAME, debug=settings.DEBUG)
+# The current user is loaded (and password-reset enforced) by load_current_user,
+# applied to every route. It runs in the request task so its DB access is safe.
+# The OpenAPI/docs title is fixed at construction (before the DB is loaded); the
+# live, user-facing site name is DB-backed (see runtime_config / setting()).
+app = FastAPI(
+    title=runtime_config.DEFAULTS["SITE_NAME"],
+    debug=settings.DEBUG,
+    dependencies=[Depends(load_current_user)],
+)
 
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.datastructures import MutableHeaders
 from app.database import AsyncSessionLocal
-from jose import jwt
-from app.utils.auth import SECRET_KEY, ALGORITHM
-from sqlalchemy.future import select
-from app.models.user import User
 
-class UserAuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        request.state.user = None
 
-        # Skip the auth lookup for static/upload asset requests so we don't run a
-        # JWT decode + DB query on every image/CSS/JS fetch.
-        path = request.url.path
+@app.on_event("startup")
+async def _load_runtime_secrets():
+    # Generate (if missing) and load SECRET_KEY / ALTCHA_HMAC_KEY from the DB.
+    async with AsyncSessionLocal() as db:
+        await runtime_config.ensure_loaded(db)
+
+
+@app.exception_handler(PasswordChangeRequired)
+async def _password_change_required_handler(request: Request, exc: PasswordChangeRequired):
+    return RedirectResponse("/auth/change-password", status_code=302)
+
+
+@app.exception_handler(SetupRequired)
+async def _setup_required_handler(request: Request, exc: SetupRequired):
+    return RedirectResponse("/setup", status_code=302)
+
+
+class CsrfMiddleware:
+    """Pure-ASGI middleware that issues/propagates the CSRF double-submit token.
+
+    Implemented as raw ASGI (not BaseHTTPMiddleware) so it does not run the
+    endpoint in a child task -- that child-task behaviour corrupts SQLAlchemy's
+    async (greenlet) DB context and triggers asyncpg "another operation in
+    progress" errors. Does no DB work itself.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        state = scope.setdefault("state", {})
+        state["user"] = None  # default; load_current_user sets the real value
+
+        path = scope.get("path", "")
         if path.startswith("/static/") or path.startswith(f"/{settings.UPLOAD_DIR}/"):
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
-        token = request.cookies.get("access_token")
-        if token and token.startswith("Bearer "):
-            token = token[7:]
+        csrf_token = Request(scope).cookies.get(CSRF_COOKIE_NAME)
+        if csrf_token:
+            state["csrf_token"] = csrf_token
+            await self.app(scope, receive, send)
+            return
 
-        if token:
-            try:
-                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-                username = payload.get("sub")
-                if username:
-                    async with AsyncSessionLocal() as db:
-                        stmt = select(User).where(User.username == username)
-                        result = await db.execute(stmt)
-                        request.state.user = result.scalars().first()
-            except Exception:
-                pass
-                
-        response = await call_next(request)
-        return response
+        # Issue a new token (readable by JS for the X-CSRF-Token header).
+        csrf_token = generate_csrf_token()
+        state["csrf_token"] = csrf_token
+        cookie = f"{CSRF_COOKIE_NAME}={csrf_token}; Path=/; Max-Age={60 * 60 * 24 * 7}; SameSite=lax"
+        if settings.BASE_URL.startswith("https"):
+            cookie += "; Secure"
 
-app.add_middleware(UserAuthMiddleware)
+        async def send_with_cookie(message):
+            if message["type"] == "http.response.start":
+                MutableHeaders(scope=message).append("set-cookie", cookie)
+            await send(message)
+
+        await self.app(scope, receive, send_with_cookie)
+
+app.add_middleware(CsrfMiddleware)
 
 
 # Ensure upload directory exists
@@ -58,13 +100,10 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.mount(f"/{settings.UPLOAD_DIR}", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # Include routers
-app.include_router(auth.router, prefix="/auth")
+app.include_router(setup.router, dependencies=[Depends(verify_csrf)])
+app.include_router(auth.router, prefix="/auth", dependencies=[Depends(verify_csrf)])
 app.include_router(frontend.router)
-app.include_router(admin.router)
-
-templates = Jinja2Templates(directory="app/templates")
-from app.config import settings
-templates.env.globals["settings"] = settings
+app.include_router(admin.router, dependencies=[Depends(verify_csrf)])
 
 async def render_connection_error(request: Request, error_message: str):
     # Check if this is a JSON request

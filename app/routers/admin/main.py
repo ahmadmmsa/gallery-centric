@@ -1,7 +1,6 @@
 from typing import Optional, List
 from fastapi import APIRouter, Request, Depends, Query, Form, BackgroundTasks, HTTPException, Response
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
@@ -24,14 +23,14 @@ from app.utils.db_utils import safe_execute_all
 from app.routers.admin.helpers import form_body, redirect_to
 from app.routers.admin.gallery import gallery_router
 from app.routers.admin.taxonomy import taxonomy_router
+from app.routers.admin.settings import settings_router
+from app.utils.templates import templates
 
 router = APIRouter(prefix="/admin")
-templates = Jinja2Templates(directory="app/templates")
-from app.config import settings
-templates.env.globals["settings"] = settings
 
 router.include_router(gallery_router)
 router.include_router(taxonomy_router)
+router.include_router(settings_router)
 
 async def safe_count(db, model, condition=None):
     stmt = select(func.count()).select_from(model)

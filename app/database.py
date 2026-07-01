@@ -22,7 +22,8 @@ AsyncSessionLocal = async_sessionmaker(
 # Declarative base for models
 Base = declarative_base()
 
-# Dependency for FastAPI
+# Dependency for FastAPI. FastAPI caches this per request, so every dependency
+# and the endpoint share a single session/connection within one request.
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session

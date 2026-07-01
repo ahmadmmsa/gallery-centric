@@ -1,7 +1,6 @@
 from typing import Optional, List, Any, Type
 from fastapi import APIRouter, Request, Depends, Query, Form, UploadFile, File, HTTPException, Response
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -30,10 +29,9 @@ from app.utils.db_utils import safe_execute_all, safe_execute_first
 from app.config import settings
 
 from app.routers.admin.helpers import form_body, redirect_to, _gen_slug
+from app.utils.templates import templates
 
 gallery_router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-templates.env.globals["settings"] = settings
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 

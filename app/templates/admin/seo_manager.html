@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+
+{% block title %}SEO - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-search"></i> SEO &amp; Social Tags</h2>
+        <p class="text-muted mb-0">Meta tags injected site-wide. Per-gallery title/description/image still override these.</p>
+    </div>
+</div>
+
+{% if saved %}
+<div class="alert alert-success bg-success bg-opacity-10 border-success text-success" role="alert">
+    <i class="bi bi-check-circle"></i> SEO settings saved.
+</div>
+{% endif %}
+
+<form method="post" action="/admin/seo" class="card bg-dark border-secondary p-4" style="max-width: 820px;">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+
+    <h5 class="text-primary mb-3"><i class="bi bi-sliders"></i> General</h5>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Meta Keywords</label>
+        <input type="text" name="SEO_KEYWORDS" value="{{ values.SEO_KEYWORDS }}"
+               class="form-control bg-dark text-white border-secondary" placeholder="comic, gallery, manga">
+        <div class="form-text">Comma-separated. Minor SEO value nowadays, but harmless.</div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Robots</label>
+            <select name="SEO_ROBOTS" class="form-select bg-dark text-white border-secondary">
+                {% for opt in ["index, follow", "noindex, follow", "index, nofollow", "noindex, nofollow"] %}
+                <option value="{{ opt }}" {% if values.SEO_ROBOTS == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Controls whether search engines index the site.</div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Theme Color</label>
+            <input type="text" name="SEO_THEME_COLOR" value="{{ values.SEO_THEME_COLOR }}"
+                   class="form-control bg-dark text-white border-secondary" placeholder="#0d6efd">
+            <div class="form-text">Browser/mobile UI accent color.</div>
+        </div>
+    </div>
+    <div class="mb-4">
+        <label class="form-label fw-semibold">Default Share Image (URL)</label>
+        <input type="url" name="SEO_DEFAULT_IMAGE" value="{{ values.SEO_DEFAULT_IMAGE }}"
+               class="form-control bg-dark text-white border-secondary" placeholder="https://example.com/og-cover.png">
+        <div class="form-text">Fallback preview image when a page has none of its own.</div>
+    </div>
+
+    <hr class="border-secondary">
+    <h5 class="text-primary mb-1"><i class="bi bi-facebook"></i> Open Graph</h5>
+    <p class="form-text mt-0 mb-3">Read by Facebook, Snapchat, WhatsApp, LinkedIn, Discord and most link-preview crawlers.</p>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">og:site_name</label>
+        <input type="text" name="SEO_OG_SITE_NAME" value="{{ values.SEO_OG_SITE_NAME }}"
+               class="form-control bg-dark text-white border-secondary" placeholder="Defaults to Site Name">
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">fb:app_id</label>
+            <input type="text" name="SEO_FB_APP_ID" value="{{ values.SEO_FB_APP_ID }}"
+                   class="form-control bg-dark text-white border-secondary" placeholder="1234567890">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">fb:pages</label>
+            <input type="text" name="SEO_FB_PAGES" value="{{ values.SEO_FB_PAGES }}"
+                   class="form-control bg-dark text-white border-secondary" placeholder="Facebook Page ID(s)">
+        </div>
+    </div>
+
+    <hr class="border-secondary">
+    <h5 class="text-primary mb-3"><i class="bi bi-twitter-x"></i> Twitter / X</h5>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-semibold">Card Type</label>
+            <select name="SEO_TWITTER_CARD" class="form-select bg-dark text-white border-secondary">
+                {% for opt in ["summary_large_image", "summary"] %}
+                <option value="{{ opt }}" {% if values.SEO_TWITTER_CARD == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-semibold">Site @handle</label>
+            <input type="text" name="SEO_TWITTER_SITE" value="{{ values.SEO_TWITTER_SITE }}"
+                   class="form-control bg-dark text-white border-secondary" placeholder="@yoursite">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-semibold">Creator @handle</label>
+            <input type="text" name="SEO_TWITTER_CREATOR" value="{{ values.SEO_TWITTER_CREATOR }}"
+                   class="form-control bg-dark text-white border-secondary" placeholder="@author">
+        </div>
+    </div>
+
+    <div class="text-end">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save SEO Settings</button>
+    </div>
+</form>
+{% endblock %}

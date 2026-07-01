@@ -79,6 +79,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="/admin/tag-types/new">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Type Name *</label>
@@ -113,6 +114,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="editTagTypeForm" method="post">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Type Name *</label>

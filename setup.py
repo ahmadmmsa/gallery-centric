@@ -181,8 +181,33 @@ def stamp_alembic() -> None:
         _log(f"Warning: 'alembic stamp head' failed (continuing): {exc.stderr.strip()}")
 
 
+async def generate_secrets() -> None:
+    """Generate SECRET_KEY / ALTCHA_HMAC_KEY (encrypted) in the DB if missing."""
+    from app.database import AsyncSessionLocal, engine
+    from app.services import runtime_config
+
+    async with AsyncSessionLocal() as db:
+        await runtime_config.bootstrap(db)
+    await engine.dispose()
+    _log("Application secrets generated/verified (stored encrypted in the database).")
+
+
+def _announce_setup_needed(username: str) -> None:
+    _log("=" * 64)
+    _log("FIRST-RUN SETUP REQUIRED")
+    _log(f"    Open {settings.BASE_URL} in your browser to set the password")
+    _log(f"    for the administrator account '{username}'.")
+    _log("=" * 64)
+
+
 async def create_admin_user() -> None:
-    """Create the admin user from ADMIN_USERNAME / ADMIN_PASSWORD if absent."""
+    """Final setup step: ensure an admin placeholder exists for first-run setup.
+
+    The admin is created with an unusable random password and
+    ``must_change_password=True``. Nobody logs in with it -- the user sets the
+    real password from the web /setup page on first launch.
+    """
+    import secrets as _secrets
     from sqlalchemy.future import select
 
     from app.database import AsyncSessionLocal, engine
@@ -191,26 +216,28 @@ async def create_admin_user() -> None:
 
     async with AsyncSessionLocal() as db:
         username = settings.ADMIN_USERNAME
-        result = await db.execute(select(User).where(User.username == username))
-        user = result.scalars().first()
+        user = (await db.execute(select(User).where(User.username == username))).scalars().first()
 
         if user is None:
             db.add(
                 User(
                     username=username,
                     email="admin@example.com",
-                    hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
+                    # Unusable placeholder; replaced via the web /setup page.
+                    hashed_password=get_password_hash(_secrets.token_urlsafe(32)),
                     is_admin=True,
+                    must_change_password=True,
                 )
             )
             await db.commit()
-            _log(f"Created admin user '{username}'.")
-        elif not user.is_admin:
+            _announce_setup_needed(username)
+        elif user.must_change_password:
+            # Setup not completed yet -> keep it as an admin and re-announce.
             user.is_admin = True
             await db.commit()
-            _log(f"Promoted existing user '{username}' to admin.")
+            _announce_setup_needed(username)
         else:
-            _log(f"Admin user '{username}' already exists.")
+            _log(f"Admin user '{username}' already configured (password set by user).")
 
     await engine.dispose()
 
@@ -220,6 +247,8 @@ async def main() -> None:
     await ensure_database_exists()
     await create_schema()
     stamp_alembic()
+    await generate_secrets()
+    # Admin creation runs last so the schema and secrets are fully in place.
     await create_admin_user()
     _log("Setup complete.")
 

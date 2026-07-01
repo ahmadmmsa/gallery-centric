@@ -2,7 +2,6 @@ from typing import Optional, Type, Any, List
 from pydantic import BaseModel
 from fastapi import APIRouter, Request, Depends, Query, Form, HTTPException
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, case
 from sqlalchemy.orm import selectinload
@@ -22,11 +21,9 @@ from app.schemas.admin import (
 )
 
 from app.routers.admin.helpers import form_body, redirect_to, _gen_slug
+from app.utils.templates import templates
 
 taxonomy_router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-from app.config import settings
-templates.env.globals["settings"] = settings
 
 async def _resolve_tag_type(db: AsyncSession, type_name: str, fallback_to_misc: bool = False) -> TagType:
     sanitized_type_name = "".join(c for c in type_name if c.isalnum())

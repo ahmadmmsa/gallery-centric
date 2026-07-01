@@ -1,3 +1,4 @@
+{% from 'partials/macros.html' import tax_url %}
 <div class="row g-2" id="gallery-grid">
     {% for gallery in galleries %}
     <div class="col-12 col-xl-6">
@@ -41,28 +42,28 @@
                         {% if gallery.artists %}
                             <span class="text-secondary border-end border-secondary pe-1 me-1">artist</span>
                             {% for artist in gallery.artists %}
-                            <a href="/tags/?artist:{{ artist.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ artist.name }}</a>
+                            <a href="{{ tax_url(artist.name, 'artist') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ artist.name }}</a>
                             {% endfor %}
                         {% endif %}
 
                         {% if gallery.characters %}
                             <span class="text-secondary border-end border-secondary pe-1 me-1 ms-1">characters</span>
                             {% for character in gallery.characters %}
-                            <a href="/tags/?character:{{ character.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ character.name }}</a>
+                            <a href="{{ tax_url(character.name, 'character') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ character.name }}</a>
                             {% endfor %}
                         {% endif %}
 
                         {% if gallery.parodies %}
                             <span class="text-secondary border-end border-secondary pe-1 me-1 ms-1">parodies</span>
                             {% for parody in gallery.parodies %}
-                            <a href="/tags/?parody:{{ parody.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ parody.name }}</a>
+                            <a href="{{ tax_url(parody.name, 'parody') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ parody.name }}</a>
                             {% endfor %}
                         {% endif %}
 
                         {% if gallery.tags %}
                             <span class="text-secondary border-end border-secondary pe-1 me-1 ms-1">tags</span>
                             {% for tag in gallery.tags %}
-                            <a href="/tags/?{{ tag.name.replace(' ', '_') }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ tag.name }}</a>
+                            <a href="{{ tax_url(tag.name) }}" class="badge bg-dark border border-secondary text-light text-decoration-none">{{ tag.name }}</a>
                             {% endfor %}
                         {% endif %}
                     </div>

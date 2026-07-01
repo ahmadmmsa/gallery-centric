@@ -58,6 +58,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="/admin/parodies/new">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Parody Name *</label>

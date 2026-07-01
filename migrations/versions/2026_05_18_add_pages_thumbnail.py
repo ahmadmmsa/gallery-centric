@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '0001_add_pages_thumbnail'
-down_revision = None
+down_revision = '0000_baseline'
 branch_labels = None
 depends_on = None
 

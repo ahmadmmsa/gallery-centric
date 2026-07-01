@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // CSRF token (double-submit cookie) for non-HTMX fetch/XHR requests.
+    const CSRF_TOKEN = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
     // -------------------------------------------------------------
     // 1. SortableJS Page Reordering
     // -------------------------------------------------------------
@@ -21,7 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(`/admin/galleries/${GALLERY_ID}/pages/reorder`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': CSRF_TOKEN
                         },
                         body: JSON.stringify({
                             page_id: parseInt(pageId),
@@ -81,7 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const response = await fetch(`/admin/pages/${pageId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-Token': CSRF_TOKEN }
                 });
                 const data = await response.json();
                 
@@ -194,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(`/admin/galleries/${GALLERY_ID}/upload-zip`, {
                     method: 'POST',
+                    headers: { 'X-CSRF-Token': CSRF_TOKEN },
                     body: formData
                 });
                 
@@ -338,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Asynchronous XHR to track progress
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `/admin/galleries/${GALLERY_ID}/upload-image`, true);
+            xhr.setRequestHeader('X-CSRF-Token', CSRF_TOKEN);
 
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable) {
@@ -453,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const deletePromises = Array.from(selectedCheckboxes).map(cb => {
                     const pageId = cb.value;
-                    return fetch(`/admin/pages/${pageId}`, { method: 'DELETE' })
+                    return fetch(`/admin/pages/${pageId}`, { method: 'DELETE', headers: { 'X-CSRF-Token': CSRF_TOKEN } })
                         .then(res => res.json())
                         .then(data => {
                             if (data.status === 'success') {

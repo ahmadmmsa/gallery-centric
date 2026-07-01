@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Site Settings - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-gear"></i> Site Settings</h2>
+        <p class="text-muted mb-0">General site identity. Stored in the database and applied everywhere immediately.</p>
+    </div>
+</div>
+
+{% if saved %}
+<div class="alert alert-success bg-success bg-opacity-10 border-success text-success" role="alert">
+    <i class="bi bi-check-circle"></i> Settings saved.
+</div>
+{% endif %}
+
+<form method="post" action="/admin/settings" class="card bg-dark border-secondary p-4" style="max-width: 720px;">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Site Name</label>
+        <input type="text" name="SITE_NAME" value="{{ values.SITE_NAME }}" required
+               class="form-control bg-dark text-white border-secondary" placeholder="Gallery Centric">
+        <div class="form-text">Shown in the navbar, footer, page titles and social previews.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Site Description</label>
+        <textarea name="SITE_DESCRIPTION" rows="3"
+                  class="form-control bg-dark text-white border-secondary"
+                  placeholder="A short description of your site.">{{ values.SITE_DESCRIPTION }}</textarea>
+        <div class="form-text">Used as the default meta description on the home page.</div>
+    </div>
+
+    <div class="text-end">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Settings</button>
+    </div>
+</form>
+{% endblock %}

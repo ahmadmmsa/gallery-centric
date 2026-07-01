@@ -7,3 +7,4 @@ from .character import Character
 from .parody import Parody
 from .gallery import Gallery, Page
 from .user import User
+from .app_setting import AppSetting

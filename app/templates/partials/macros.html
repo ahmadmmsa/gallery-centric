@@ -1,0 +1,5 @@
+{# Build the /tags/ filter URL for a taxonomy item (tag/artist/character/parody).
+   Keeps the "spaces -> underscores" + optional type prefix convention in one place. #}
+{% macro tax_url(name, prefix='') -%}
+/tags/?{% if prefix %}{{ prefix }}:{% endif %}{{ name.replace(' ', '_') }}
+{%- endmacro %}

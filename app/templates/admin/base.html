@@ -3,11 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Admin - {{ settings.SITE_NAME }}{% endblock %}</title>
+    <meta name="csrf-token" content="{{ request.state.csrf_token }}">
+    <title>{% block title %}Admin - {{ setting('SITE_NAME') }}{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/static/css/admin.css">
     <script src="/static/js/htmx.min.js"></script>
+    <script>
+        // Attach the CSRF token to every HTMX request.
+        document.addEventListener('htmx:configRequest', function (evt) {
+            var m = document.querySelector('meta[name="csrf-token"]');
+            if (m) evt.detail.headers['X-CSRF-Token'] = m.getAttribute('content');
+        });
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -15,7 +23,7 @@
         <nav class="navbar-vertical navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid">
                 <h2 class="navbar-brand fw-bold text-primary" href="/admin">
-                    {{ settings.SITE_NAME }} <a class="text-secondary" href="/" target="_blank"><i class="bi bi-house-door"></i></a>
+                    {{ setting('SITE_NAME') }} <a class="text-secondary" href="/" target="_blank"><i class="bi bi-house-door"></i></a>
                 </h2> 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav"
                     aria-controls="adminNav" aria-expanded="false">
@@ -36,6 +44,9 @@
                         <li class="nav-item"><a class="nav-link" href="/admin/characters"><i class="bi bi-person-bounding-box"></i> Characters</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/parodies"><i class="bi bi-film"></i> Parodies</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/languages"><i class="bi bi-globe"></i> Languages</a></li>
+                        <li class="nav-header">Settings</li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/settings"><i class="bi bi-gear"></i> Site Settings</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/seo"><i class="bi bi-search"></i> SEO</a></li>
                     </ul>
                 </div>
             </div>

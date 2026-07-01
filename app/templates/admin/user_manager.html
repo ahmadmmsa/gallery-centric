@@ -72,6 +72,7 @@
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <form method="post" action="/admin/users/{{ user.id }}/edit">
+                                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
                                 <div class="modal-body">
                                     <div class="mb-3">
                                         <label class="form-label">Username *</label>
@@ -127,6 +128,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="/admin/users/new">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Username *</label>

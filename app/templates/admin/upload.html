@@ -98,6 +98,7 @@
     </h6>
     <div>
         <form method="post" class="needs-validation d-flex align-items-center gap-2 m-0">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
             <a href="/admin/galleries/{{ gallery.id }}/edit" class="btn btn-sm btn-secondary">
                 <i class="bi bi-arrow-left"></i> Edit
             </a>

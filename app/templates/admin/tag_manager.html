@@ -81,6 +81,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="/admin/tags/new">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Tag Name *</label>
@@ -115,6 +116,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="editTagForm" method="post">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Tag Name *</label>

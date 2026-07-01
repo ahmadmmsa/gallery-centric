@@ -37,8 +37,10 @@ document.getElementById('importFolderForm').addEventListener('submit', async fun
     
     try {
         const formData = new FormData(this);
+        const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
         const response = await fetch(this.action, {
             method: 'POST',
+            headers: { 'X-CSRF-Token': csrf },
             body: formData
         });
         
