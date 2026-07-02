@@ -7,9 +7,6 @@ services:
     depends_on:
       gallerydb:
         condition: service_healthy
-    # All configuration comes from .env. Secrets (SECRET_KEY, ALTCHA_HMAC_KEY)
-    # are generated at first launch and stored encrypted in the database; the
-    # admin password is generated at first launch and printed to the logs.
     env_file:
       - .env
     ports:
@@ -38,8 +35,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      # PG18 stores data in a version-specific subdir; mount the parent so the
-      # image manages the layout (recommended for pg_upgrade compatibility).
       - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
