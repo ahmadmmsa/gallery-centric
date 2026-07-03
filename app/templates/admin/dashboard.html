@@ -105,8 +105,7 @@
                 <div class="d-flex flex-wrap gap-2 mt-2">
                     <small>Popular Tags</small>
                     {% for tag in stats.popular_tags %}
-                    <a href="/admin/tags/{{ tag.name }}" class="btn btn-sm btn-outline-light"
-                        style="background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);">
+                    <a href="/admin/tags/{{ tag.name }}" class="btn btn-sm btn-outline-light stat-card-highlight">
                         {{ tag.name }}
                         <span class="badge bg-secondary ms-1">{{ tag.usage_count }}</span>
                     </a>

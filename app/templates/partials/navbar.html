@@ -1,6 +1,6 @@
 <nav>
   <div class="w-100 p-3">
-    <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 40px;">
+    <div class="navbar-row">
       <a class="navbar-brand fw-bold text-primary" href="/">{{ setting('SITE_NAME') }}</a>
       <form class="d-flex justify-content-between align-items-center gap-2 w-100" action="/search" method="get">
         <input class="form-control text-light border-secondary" type="search" value="{{ q if q else '' }}"
@@ -28,6 +28,7 @@
               {% if request.state.user.is_admin %}
               <li><a class="dropdown-item" href="/admin/"><i class="bi bi-gear"></i> Admin</a></li>
               {% endif %}
+              <li><a class="dropdown-item" href="/favorites"><i class="bi bi-star"></i> Favorites</a></li>
               <li><a class="dropdown-item" href="/auth/logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
             </ul>
           </div>

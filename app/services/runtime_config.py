@@ -34,6 +34,7 @@ DEFAULTS = {
     "SEO_ROBOTS": "index, follow",
     "SEO_THEME_COLOR": "",
     "SEO_DEFAULT_IMAGE": "",
+    "SEO_FAVICON": "",
     # --- SEO: Open Graph (Facebook, Snapchat, WhatsApp, LinkedIn) ---
     "SEO_OG_SITE_NAME": "",
     "SEO_FB_APP_ID": "",

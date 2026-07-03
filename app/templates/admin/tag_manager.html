@@ -91,7 +91,7 @@
                     <div class="mb-3 position-relative">
                         <label class="form-label">Type *</label>
                         <input type="text" name="tag_type" id="newTagType" class="form-control bg-dark text-light border-secondary autocomplete-input" data-autocomplete-type="tag-type" autocomplete="off" required>
-                        <div class="dropdown-menu bg-dark border-secondary w-100 autocomplete-suggestions shadow-lg" style="display: none; max-height: 200px; overflow-y: auto;"></div>
+                        <div class="dropdown-menu bg-dark border-secondary w-100 autocomplete-suggestions shadow-lg"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -126,7 +126,7 @@
                     <div class="mb-3 position-relative">
                         <label class="form-label">Type *</label>
                         <input type="text" name="tag_type" id="editTagType" class="form-control bg-dark text-light border-secondary autocomplete-input" data-autocomplete-type="tag-type" autocomplete="off" required>
-                        <div class="dropdown-menu bg-dark border-secondary w-100 autocomplete-suggestions shadow-lg" style="display: none; max-height: 200px; overflow-y: auto;"></div>
+                        <div class="dropdown-menu bg-dark border-secondary w-100 autocomplete-suggestions shadow-lg"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -151,12 +151,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-    .autocomplete-suggestions .dropdown-item:hover {
-        background-color: var(--bs-primary) !important;
-        color: white !important;
-    }
-</style>
 <script>
     let currentEditingTagId = null;
     const editTagModal = document.getElementById('editTagModal');

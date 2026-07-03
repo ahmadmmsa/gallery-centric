@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ request.state.csrf_token }}">
     <title>{% block title %}Admin - {{ setting('SITE_NAME') }}{% endblock %}</title>
+    {% if setting('SEO_FAVICON') %}<link rel="icon" href="{{ setting('SEO_FAVICON') }}">{% endif %}
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/static/css/admin.css">
@@ -32,8 +33,10 @@
                 <div class="collapse navbar-collapse" id="adminNav">
                     <ul class="navbar-nav flex-column mt-3">
                         <li class="nav-item"><a class="nav-link" href="/admin/"><i class="bi bi-house"></i> Dashboard</a></li>
-                        <li class="nav-header">System</li>
+                        <li class="nav-header">Management</li>
                         <li class="nav-item"><a class="nav-link" href="/admin/users"><i class="bi bi-people"></i> Users</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/settings"><i class="bi bi-gear"></i> Site Settings</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/seo"><i class="bi bi-search"></i> SEO</a></li>
                         <li class="nav-header">Content</li>
                         <li class="nav-item"><a class="nav-link" href="/admin/galleries"><i class="bi bi-images"></i> Galleries</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/galleries/new"><i class="bi bi-plus-circle"></i> New Gallery</a></li>
@@ -44,15 +47,13 @@
                         <li class="nav-item"><a class="nav-link" href="/admin/characters"><i class="bi bi-person-bounding-box"></i> Characters</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/parodies"><i class="bi bi-film"></i> Parodies</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/languages"><i class="bi bi-globe"></i> Languages</a></li>
-                        <li class="nav-header">Settings</li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/settings"><i class="bi bi-gear"></i> Site Settings</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/seo"><i class="bi bi-search"></i> SEO</a></li>
+                        
                     </ul>
                 </div>
             </div>
         </nav>
         <!-- Main Content -->
-        <main style="width: 100%;">
+        <main class="admin-main">
             <div class="p-4">
                 {% block content %}{% endblock %}
             </div>

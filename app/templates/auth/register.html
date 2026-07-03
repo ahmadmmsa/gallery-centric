@@ -7,8 +7,8 @@
 
 {% block content %}
 <!-- Centering flex layout container -->
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 60vh;">
-  <div class="w-100 p-4 p-sm-5 bg-body-tertiary border border-secondary border-opacity-25 rounded-4" style="max-width: 420px;">
+<div class="container d-flex align-items-center justify-content-center auth-wrap">
+  <div class="w-100 p-4 p-sm-5 bg-body-tertiary border border-secondary border-opacity-25 rounded-4 auth-card">
     
     <!-- Header / Title Segment -->
     <div class="text-center mb-4">
@@ -29,7 +29,7 @@
 
       <!-- Username Field Box -->
       <div class="mb-3">
-        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Username</label>
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5 auth-label">Username</label>
         <div class="input-group">
           <span class="input-group-text bg-body border-secondary border-opacity-25 text-muted px-3">
             <i class="bi bi-person fs-5"></i>
@@ -37,8 +37,7 @@
           <input type="text" 
                  name="username" 
                  placeholder="Choose username" 
-                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25" 
-                 style="font-size: 0.9rem;"
+                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25 auth-input" 
                  required 
                  autofocus />
         </div>
@@ -46,7 +45,7 @@
 
       <!-- Email Field Box -->
       <div class="mb-3">
-        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Email Address</label>
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5 auth-label">Email Address</label>
         <div class="input-group">
           <span class="input-group-text bg-body border-secondary border-opacity-25 text-muted px-3">
             <i class="bi bi-envelope fs-5"></i>
@@ -54,15 +53,14 @@
           <input type="email" 
                  name="email" 
                  placeholder="name@example.com" 
-                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25" 
-                 style="font-size: 0.9rem;"
+                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25 auth-input" 
                  required />
         </div>
       </div>
       
       <!-- Password Field Box -->
       <div class="mb-4">
-        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Password</label>
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5 auth-label">Password</label>
         <div class="input-group">
           <span class="input-group-text bg-body border-secondary border-opacity-25 text-muted px-3">
             <i class="bi bi-lock fs-5"></i>
@@ -71,8 +69,7 @@
                  id="register-password"
                  name="password" 
                  placeholder="••••••••" 
-                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25" 
-                 style="font-size: 0.9rem;"
+                 class="form-control form-control-lg bg-transparent border-secondary border-opacity-25 auth-input" 
                  required 
                  minlength="8" />
           <!-- Suffix interactive hidden masking toggle -->
@@ -89,8 +86,7 @@
       <div class="mb-4 text-center">
         <altcha-widget 
           challengeurl="/auth/altcha-challenge"
-          class="d-inline-block w-100"
-          style="--altcha-max-width: 100%;"
+          class="d-inline-block w-100 altcha-full"
           hidefooter>
         </altcha-widget>
       </div>
@@ -107,7 +103,7 @@
     <!-- Decorative Visual Separator Line -->
     <div class="position-relative text-center my-4">
       <hr class="text-secondary opacity-25 m-0" />
-      <span class="position-absolute top-50 start-50 translate-middle bg-body-tertiary px-3 text-uppercase tracking-widest text-muted fw-semibold" style="font-size: 0.65rem;">
+      <span class="position-absolute top-50 start-50 translate-middle bg-body-tertiary px-3 text-uppercase tracking-widest text-muted fw-semibold auth-divider-label">
         Existing User?
       </span>
     </div>

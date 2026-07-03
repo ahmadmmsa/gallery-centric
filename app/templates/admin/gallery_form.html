@@ -4,15 +4,7 @@
 
 {% block content %}
 
-<style>
-    h5 {
-        font-size: medium;
-        font-weight: 500;
-        padding: 0.5rem 0 0 0.5rem;
-    }
-</style>
-
-<div>
+<div class="gallery-form-page">
     <form method="post" class="needs-validation">
         <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
         <div class="row">

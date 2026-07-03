@@ -8,7 +8,7 @@
      
     {% if type == "tag" %}
     <div class="input-group">
-        <select id="{{ type }}-tag-type-select" name="tag_type" class="form-select text-light border-secondary bg-dark" style="max-width: 150px;" onchange="htmx.trigger(document.getElementById('{{ type }}-search'), 'search')">
+        <select id="{{ type }}-tag-type-select" name="tag_type" class="form-select text-light border-secondary bg-dark tag-type-select" onchange="htmx.trigger(document.getElementById('{{ type }}-search'), 'search')">
             <option value="">All Types</option>
             {% for tt in tag_types %}
             <option value="{{ tt.name }}">{{ tt.name }}</option>

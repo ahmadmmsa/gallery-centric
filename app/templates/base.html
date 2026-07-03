@@ -9,6 +9,7 @@
     {% if setting('SEO_KEYWORDS') %}<meta name="keywords" content="{{ setting('SEO_KEYWORDS') }}">{% endif %}
     <meta name="robots" content="{{ setting('SEO_ROBOTS') or 'index, follow' }}">
     {% if setting('SEO_THEME_COLOR') %}<meta name="theme-color" content="{{ setting('SEO_THEME_COLOR') }}">{% endif %}
+    {% if setting('SEO_FAVICON') %}<link rel="icon" href="{{ setting('SEO_FAVICON') }}">{% endif %}
     <link rel="canonical" href="{{ seo.url }}">
 
     {# Open Graph -- Facebook, Snapchat, WhatsApp, LinkedIn, Discord all read these #}

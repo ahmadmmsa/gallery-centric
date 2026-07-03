@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from app.routers import frontend, admin, auth, setup
+from app.routers import frontend, admin, auth, setup, favorites
 from app.config import settings
 import os
 from sqlalchemy import exc as sa_exc
@@ -103,6 +103,7 @@ app.mount(f"/{settings.UPLOAD_DIR}", StaticFiles(directory=settings.UPLOAD_DIR),
 app.include_router(setup.router, dependencies=[Depends(verify_csrf)])
 app.include_router(auth.router, prefix="/auth", dependencies=[Depends(verify_csrf)])
 app.include_router(frontend.router)
+app.include_router(favorites.router, dependencies=[Depends(verify_csrf)])
 app.include_router(admin.router, dependencies=[Depends(verify_csrf)])
 
 async def render_connection_error(request: Request, error_message: str):

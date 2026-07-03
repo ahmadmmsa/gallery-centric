@@ -1,0 +1,21 @@
+{# Favorite toggle (HTMX outerHTML swap target).
+   Context: gallery_id, favorite_count, is_favorited, variant ('badge' | 'button').
+   Anonymous users can click too -- the server answers with a redirect to login. #}
+{% if variant == 'button' %}
+<button type="button"
+        class="btn btn-sm {{ 'btn-secondary' if is_favorited else 'btn-outline-secondary' }}"
+        hx-post="/favorites/{{ gallery_id }}/toggle?variant=button"
+        hx-swap="outerHTML"
+        title="{{ 'Remove from favorites' if is_favorited else 'Add to favorites' }}">
+  <i class="bi {{ 'bi-star-fill' if is_favorited else 'bi-star' }}"></i>
+  <span>{{ favorite_count }}</span>
+</button>
+{% else %}
+<button type="button"
+        class="badge bg-dark border-0 position-absolute bottom-0 end-0 m-2 favorite-badge"
+        hx-post="/favorites/{{ gallery_id }}/toggle?variant=badge"
+        hx-swap="outerHTML"
+        title="{{ 'Remove from favorites' if is_favorited else 'Add to favorites' }}">
+  <i class="bi {{ 'bi-star-fill' if is_favorited else 'bi-star' }}"></i> {{ favorite_count }}
+</button>
+{% endif %}

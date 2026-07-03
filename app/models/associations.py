@@ -1,4 +1,5 @@
-from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy import Table, Column, Integer, ForeignKey, DateTime
+from sqlalchemy.sql import func
 from app.database import Base
 
 gallery_tags = Table(
@@ -27,4 +28,12 @@ gallery_parodies = Table(
     Base.metadata,
     Column("gallery_id", Integer, ForeignKey("galleries.id", ondelete="CASCADE"), primary_key=True),
     Column("parody_id", Integer, ForeignKey("parodies.id", ondelete="CASCADE"), primary_key=True)
+)
+
+user_favorites = Table(
+    "user_favorites",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("gallery_id", Integer, ForeignKey("galleries.id", ondelete="CASCADE"), primary_key=True),
+    Column("created_at", DateTime(timezone=True), server_default=func.now(), nullable=False)
 )

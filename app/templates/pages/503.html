@@ -3,38 +3,36 @@
 {% block title %}Service Temporarily Offline - {{ seo.title }}{% endblock %}
 
 {% block content %}
-<div class="container py-5 my-5">
+<div class="container py-5 my-5 error-503">
   <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6 text-center">
       <!-- Outer glassmorphic container with micro-shadow -->
-      <div class="card bg-dark border-secondary shadow-lg p-5 rounded-4 position-relative overflow-hidden" 
-           style="background: linear-gradient(145deg, #181824, #12121a); border-width: 1.5px !important;">
-        
+      <div class="card bg-dark border-secondary shadow-lg p-5 rounded-4 position-relative overflow-hidden error-503-card">
+
         <!-- Background ambient glow -->
-        <div class="position-absolute rounded-circle" 
-             style="top: -50px; left: 50%; transform: translateX(-50%); width: 120px; height: 120px; background: rgba(239, 68, 68, 0.15); filter: blur(30px); pointer-events: none;"></div>
+        <div class="position-absolute rounded-circle error-503-glow"></div>
 
         <!-- Disconnected database icon with pulse effect -->
         <div class="mb-4 d-inline-flex position-relative">
-          <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-4 border border-danger border-opacity-25" style="width: 90px; height: 90px; display: flex; align-items: center; justify-content: center;">
-            <i class="bi bi-database-slash" style="font-size: 3rem; line-height: 1;"></i>
+          <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-4 border border-danger border-opacity-25 error-503-icon">
+            <i class="bi bi-database-slash"></i>
           </div>
-          <span class="position-absolute bottom-0 end-0 translate-middle p-2 bg-danger border border-light rounded-circle" style="animation: pulse 2s infinite;">
+          <span class="position-absolute bottom-0 end-0 translate-middle p-2 bg-danger border border-light rounded-circle error-503-pulse">
             <span class="visually-hidden">Offline</span>
           </span>
         </div>
 
         <h2 class="mb-3 text-light fw-bold">Connection Temporarily Lost</h2>
-        <p class="text-muted mb-4 px-3" style="font-size: 0.95rem; line-height: 1.6;">
+        <p class="text-muted mb-4 px-3 error-503-text">
           Our database appears to be offline or temporarily unreachable. We are currently working on restoring the service. Please try reloading this page in a moment.
         </p>
 
         <!-- Dynamic Try Again action buttons -->
         <div class="d-flex justify-content-center gap-3 mb-4">
-          <button onclick="window.location.reload();" class="btn btn-primary btn-lg px-4 rounded-pill shadow-sm" style="transition: all 0.3s ease;">
+          <button onclick="window.location.reload();" class="btn btn-primary btn-lg px-4 rounded-pill shadow-sm">
             <i class="bi bi-arrow-clockwise me-2"></i> Reload Page
           </button>
-          <a href="/" class="btn btn-outline-secondary btn-lg px-4 rounded-pill" style="transition: all 0.3s ease;">
+          <a href="/" class="btn btn-outline-secondary btn-lg px-4 rounded-pill">
             <i class="bi bi-house me-2"></i> Dashboard
           </a>
         </div>
@@ -47,8 +45,7 @@
               <button class="accordion-button collapsed bg-transparent text-muted small py-2 px-3 border border-secondary rounded-3 text-center d-inline-block w-auto mx-auto border-opacity-50" 
                       type="button" 
                       data-bs-toggle="collapse" 
-                      data-bs-target="#diagnosticCollapse" 
-                      style="box-shadow: none;">
+                      data-bs-target="#diagnosticCollapse">
                 <i class="bi bi-bug me-1"></i> Technical Details
               </button>
             </h2>
@@ -64,32 +61,4 @@
     </div>
   </div>
 </div>
-
-<style>
-  @keyframes pulse {
-    0% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-    }
-    70% {
-      transform: scale(1);
-      box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
-    }
-    100% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-    }
-  }
-  
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
-  }
-  
-  .btn-outline-secondary:hover {
-    transform: translateY(-2px);
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #fff;
-  }
-</style>
 {% endblock %}

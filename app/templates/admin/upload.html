@@ -4,88 +4,6 @@
 
 {% block head %}
 <script src="/static/js/Sortable.min.js"></script>
-<style>
-    .upload-zone {
-        border: 1px dashed var(--bs-secondary);
-        border-radius: 4px;
-        padding: 1rem;
-        text-align: center;
-        cursor: pointer;
-        background-color: var(--bs-dark);
-        transition: border-color 0.2s ease;
-    }
-
-    .upload-zone:hover,
-    .upload-zone.dragover {
-        border-color: var(--bs-info);
-    }
-
-    .upload-zone i {
-        font-size: 1.5rem;
-        color: var(--bs-secondary);
-        margin-bottom: 0.5rem;
-        display: inline-block;
-    }
-
-    .page-card {
-        transition: border-color 0.2s ease;
-    }
-
-    .page-card:hover {
-        border-color: var(--bs-info) !important;
-    }
-
-    .page-card.selected {
-        border-color: var(--bs-danger) !important;
-        background-color: rgba(220, 53, 69, 0.1) !important;
-    }
-
-    .page-img-container {
-        aspect-ratio: 3 / 4;
-        overflow: hidden;
-        background: #000;
-        position: relative;
-    }
-
-    .page-img-container img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .drag-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        cursor: grab;
-    }
-    
-    .drag-overlay:active {
-        cursor: grabbing;
-    }
-
-    .page-card:hover .drag-overlay {
-        opacity: 1;
-    }
-
-    .sortable-ghost {
-        opacity: 0.4;
-        border: 1px dashed var(--bs-info) !important;
-    }
-    
-    /* Scrollbar for compact queues */
-    .compact-scroll {
-        max-height: 120px;
-        overflow-y: auto;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -174,7 +92,7 @@
                 hx-get="/admin/galleries/{{ gallery.id }}/upload-find" 
                 hx-target="#importFoldersList" 
                 hx-indicator="#scanFoldersIndicator">
-                <span class=" htmx-indicator me-1" id="scanFoldersIndicator" role="status" aria-hidden="true" style="display: none;"></span>
+                <span class=" htmx-indicator me-1" id="scanFoldersIndicator" role="status" aria-hidden="true"></span>
                 Scan /uploads/imports
             </button>
         </div>
@@ -203,7 +121,7 @@
             </div>
             <button class="btn btn-sm btn-warning" hx-get="/admin/galleries/{{ gallery.id }}/deduplicate/scan"
                 hx-target="#duplicateResults" hx-indicator="#scanIndicator">
-                <span class="spinner-border spinner-border-sm htmx-indicator" id="scanIndicator" role="status" aria-hidden="true" style="display: none;"></span>
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="scanIndicator" role="status" aria-hidden="true"></span>
                 Scan
             </button>
         </div>
@@ -229,26 +147,26 @@
 
             <div class="row g-2" id="pagesSortableGrid">
                 {% for page in pages %}
-                <div class="col-4 col-sm-3 col-md-2 col-lg-1 page-item" style="min-width: 120px;" data-id="{{ page.id }}" id="page-{{ page.id }}">
-                    <div class="card bg-transparent border-secondary page-card h-100 rounded-1" style="cursor: pointer;">
+                <div class="col-4 col-sm-3 col-md-2 col-lg-1 page-item page-tile" data-id="{{ page.id }}" id="page-{{ page.id }}">
+                    <div class="card bg-transparent border-secondary page-card h-100 rounded-1">
                         <div class="page-img-container rounded-top-1">
                             <img src="{% if page.thumbnail_path %}{{ page.thumbnail_path }}{% else %}{{ page.image_path }}{% endif %}"
                                 alt="Pg {{ page.page_number }}" loading="lazy">
-                            <span class="position-absolute top-0 start-0 badge bg-dark bg-opacity-75 m-1 p-1 page-number-label" style="font-size: 0.7rem;">
+                            <span class="position-absolute top-0 start-0 badge bg-dark bg-opacity-75 m-1 p-1 page-number-label fs-xxs">
                                 #{{ page.page_number }}
                             </span>
                             <div class="position-absolute top-0 end-0 m-1 z-2">
-                                <input class="form-check-input page-select-cb" type="checkbox" value="{{ page.id }}" style="transform: scale(1.2); cursor: pointer;">
+                                <input class="form-check-input page-select-cb" type="checkbox" value="{{ page.id }}">
                             </div>
                             <div class="drag-overlay z-1">
                                 <i class="bi bi-arrows-move text-white"></i>
                             </div>
                         </div>
                         <div class="card-footer p-1 border-secondary d-flex justify-content-between align-items-center bg-dark">
-                            <span class="small text-secondary" style="font-size: 0.75rem;">Pg {{ page.page_number }}</span>
+                            <span class="small text-secondary fs-xs">Pg {{ page.page_number }}</span>
                             <button class="btn btn-sm btn-outline-danger border-0 delete-btn py-0 px-1" 
                             data-id="{{ page.id }}" type="button" title="Delete">
-                                <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                <i class="bi bi-trash icon-sm"></i>
                             </button>
                         </div>
                     </div>

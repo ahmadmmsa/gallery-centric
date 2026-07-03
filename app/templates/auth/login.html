@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container d-flex align-items-center justify-content-center" style="min-height: 60vh;">
-  <div class="w-100 p-4 p-sm-5 bg-dark border border-secondary rounded-4" style="max-width: 420px;">
+<div class="container d-flex align-items-center justify-content-center auth-wrap">
+  <div class="w-100 p-4 p-sm-5 bg-dark border border-secondary rounded-4 auth-card">
     
     <div class="text-center mb-4">
       <h2 class="fw-bold text-white mb-1">Welcome Back</h2>
@@ -15,11 +15,11 @@
     </div>
     {% endif %}
     
-    <form method="POST" action="/auth/login">
+    <form method="POST" action="/auth/login{% if request.query_params.get('next') %}?next={{ request.query_params.get('next') | urlencode }}{% endif %}">
       <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
 
       <div class="mb-3">
-        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5" style="font-size: 0.75rem;">Username</label>
+        <label class="form-label text-uppercase tracking-wider text-muted fw-semibold mb-1.5 auth-label">Username</label>
         <div class="input-group">
           <span class="input-group-text bg-secondary bg-opacity-10 border-secondary text-muted px-3">
             <i class="bi bi-person fs-5"></i>
@@ -27,8 +27,7 @@
           <input type="text" 
                  name="username" 
                  placeholder="Enter username" 
-                 class="form-control form-control-lg bg-transparent border-secondary text-white small" 
-                 style="font-size: 0.9rem;"
+                 class="form-control form-control-lg bg-transparent border-secondary text-white small auth-input" 
                  required 
                  autofocus />
         </div>
@@ -36,7 +35,7 @@
       
       <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-1.5">
-          <label class="form-label text-uppercase tracking-wider text-muted fw-semibold m-0" style="font-size: 0.75rem;">Password</label>
+          <label class="form-label text-uppercase tracking-wider text-muted fw-semibold m-0 auth-label">Password</label>
         </div>
         <div class="input-group">
           <span class="input-group-text bg-secondary bg-opacity-10 border-secondary text-muted px-3">
@@ -44,10 +43,8 @@
           </span>
           <input type="password" 
                  id="login-password"
-                 name="password" 
-                 placeholder="••••••••" 
-                 class="form-control form-control-lg bg-transparent border-secondary text-white small" 
-                 style="font-size: 0.9rem;"
+                 name="password"
+                 class="form-control form-control-lg bg-transparent border-secondary text-white small auth-input" 
                  required />
           <button type="button" 
                   onclick="togglePasswordVisibility()"
@@ -75,7 +72,7 @@
     
     <div class="position-relative text-center my-4">
       <hr class="text-secondary opacity-25 m-0" />
-      <span class="position-absolute top-50 start-50 translate-middle bg-dark px-3 text-uppercase tracking-widest text-muted fw-semibold" style="font-size: 0.65rem;">
+      <span class="position-absolute top-50 start-50 translate-middle bg-dark px-3 text-uppercase tracking-widest text-muted fw-semibold auth-divider-label">
         New here?
       </span>
     </div>

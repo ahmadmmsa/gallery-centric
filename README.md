@@ -10,6 +10,7 @@ A self-hosted image gallery web application. Upload galleries as ZIP archives or
 - **Tag filtering** — include/exclude filters for tags, artists, characters, parodies, and language, plus a tag browser and autocomplete
 - **Admin panel** — gallery CRUD, publish/unpublish, ZIP bulk upload, single-image upload, page reordering, taxonomy management (tags, tag types, artists, characters, parodies, languages), and site/SEO settings
 - **Image pipeline** — every upload is converted to WebP with generated cover, card thumbnail, and page thumbnails (Pillow)
+- **Favorites** — logged-in users can favorite galleries from the card grid or the gallery page (HTMX toggle) and browse them at `/favorites`
 - **Auth & security** — cookie-based auth (JWT), user registration with ALTCHA proof-of-work CAPTCHA, CSRF double-submit protection on all state-changing routes
 - **Runtime configuration** — site name, SEO defaults, and secrets live in the database and are managed from the admin panel, not config files
 - **Graceful degradation** — friendly 503 pages (HTML, HTMX partial, or JSON) when the database is unreachable

@@ -3,22 +3,22 @@
   <div class="col-md position-relative">
     <input type="text" id="filter-tags" name="tags" placeholder="Tag Name..."
       class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="">
-    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none"></div>
   </div>
   <div class="col-md position-relative">
     <input type="text" id="filter-artists" name="artists" placeholder="Artist Name..."
       class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="artist">
-    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none"></div>
   </div>
   <div class="col-md position-relative">
     <input type="text" id="filter-parodies" name="parodies" placeholder="Parody Name..."
       class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="parody">
-    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none"></div>
   </div>
   <div class="col-md position-relative">
     <input type="text" id="filter-characters" name="characters" placeholder="Character Name..."
       class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="character">
-    <div class="dropdown-menu w-100 autocomplete-suggestions d-none" style="max-height: 200px; overflow-y: auto;"></div>
+    <div class="dropdown-menu w-100 autocomplete-suggestions d-none"></div>
   </div>
   <div class="col-md">
     <select id="filter-language" name="language" class="form-select form-select-sm text-light">
@@ -39,9 +39,10 @@
       <div class="d-flex align-items-center gap-2 flex-wrap" id="active-tags-container">
         {% if active_tags_data %}
           {% for item in active_tags_data %}
+          {# Tag color is user-configured (stored in the DB), so it has to stay inline. #}
           <a href="{{ item.remove_url }}"
             class="badge py-1 px-2 rounded-pill existing-tag-badge text-decoration-none d-inline-flex align-items-center gap-1"
-            style="font-size: .7rem; background-color: {{ item.tag.tag_type.color if (item.tag.tag_type and item.tag.tag_type.color) else '#6c757d' }};"
+            style="background-color: {{ item.tag.tag_type.color if (item.tag.tag_type and item.tag.tag_type.color) else '#6c757d' }};"
             title="Remove {{ item.tag.name }}"
             data-tag-name="{{ item.tag.name }}">
             {{ item.tag.name }} <i class="bi bi-x"></i>
@@ -51,13 +52,6 @@
       </div>
   </div>
 </form>
-
-<style>
-  .autocomplete-suggestions .dropdown-item:hover {
-    background-color: var(--bs-primary) !important;
-    color: white !important;
-  }
-</style>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
