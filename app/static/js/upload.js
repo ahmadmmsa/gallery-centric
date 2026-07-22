@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Multiple Page Selection & Deletion
     // -------------------------------------------------------------
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-    const selectedCountSpan = document.getElementById('selectedCount');
+    let selectedCountSpan = document.getElementById('selectedCount');
 
     function updateSelectedState() {
         const selectedCheckboxes = document.querySelectorAll('.page-select-cb:checked');
@@ -454,44 +454,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteSelectedBtn.disabled = true;
                 deleteSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
 
-                let successCount = 0;
-                let errorCount = 0;
+                const pageIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
 
-                const deletePromises = Array.from(selectedCheckboxes).map(cb => {
-                    const pageId = cb.value;
-                    return fetch(`/admin/pages/${pageId}`, { method: 'DELETE', headers: { 'X-CSRF-Token': CSRF_TOKEN } })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.status === 'success') {
-                                successCount++;
-                                const itemEl = document.getElementById(`page-${pageId}`);
-                                if (itemEl) itemEl.remove();
-                            } else {
-                                errorCount++;
-                            }
-                        })
-                        .catch(() => errorCount++);
-                });
+                try {
+                    const response = await fetch(`/admin/galleries/${GALLERY_ID}/pages`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': CSRF_TOKEN
+                        },
+                        body: JSON.stringify({ page_ids: pageIds })
+                    });
+                    const data = await response.json();
+                    if (!response.ok || data.status !== 'success') {
+                        throw new Error(data.detail || 'Bulk deletion failed');
+                    }
 
-                await Promise.allSettled(deletePromises);
+                    pageIds.forEach(pageId => {
+                        const itemEl = document.getElementById(`page-${pageId}`);
+                        if (itemEl) itemEl.remove();
+                    });
+                    updatePageLabels();
 
-                updatePageLabels();
-                updateSelectedState();
-                
-                const items = document.querySelectorAll('#pagesSortableGrid .page-item');
-                if (items.length === 0) {
-                    const emptyState = document.getElementById('emptyPagesState');
-                    if (emptyState) emptyState.classList.remove('d-none');
+                    const items = document.querySelectorAll('#pagesSortableGrid .page-item');
+                    if (items.length === 0) {
+                        const emptyState = document.getElementById('emptyPagesState');
+                        if (emptyState) emptyState.classList.remove('d-none');
+                    }
+                    showGlobalToast(`Successfully deleted ${data.deleted_count} pages.`, 'success');
+                } catch (error) {
+                    console.error('Bulk deletion error:', error);
+                    showGlobalToast(error.message || 'Bulk deletion failed.', 'danger');
+                } finally {
+                    deleteSelectedBtn.disabled = false;
+                    deleteSelectedBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected (<span id="selectedCount">0</span>)';
+                    selectedCountSpan = document.getElementById('selectedCount');
+                    updateSelectedState();
                 }
-
-                if (errorCount > 0) {
-                    showGlobalToast(`Deleted ${successCount} pages, but ${errorCount} failed.`, 'warning');
-                } else {
-                    showGlobalToast(`Successfully deleted ${successCount} pages.`, 'success');
-                }
-
-                deleteSelectedBtn.disabled = false;
-                deleteSelectedBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected (<span id="selectedCount">0</span>)';
             });
         }
     }

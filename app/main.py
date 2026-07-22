@@ -11,7 +11,7 @@ from app.utils.templates import templates
 from app.utils.seo import get_default_seo
 from app.utils.csrf import verify_csrf, generate_csrf_token, CSRF_COOKIE_NAME
 from app.utils.deps import load_current_user, PasswordChangeRequired, SetupRequired
-from app.services import runtime_config
+from app.services import language_service, runtime_config
 
 # The current user is loaded (and password-reset enforced) by load_current_user,
 # applied to every route. It runs in the request task so its DB access is safe.
@@ -32,6 +32,7 @@ async def _load_runtime_secrets():
     # Generate (if missing) and load SECRET_KEY / ALTCHA_HMAC_KEY from the DB.
     async with AsyncSessionLocal() as db:
         await runtime_config.ensure_loaded(db)
+        await language_service.refresh(db)
 
 
 @app.exception_handler(PasswordChangeRequired)

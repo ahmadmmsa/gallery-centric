@@ -4,7 +4,6 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
-import asyncio
 
 from app.database import get_db
 from app.utils.auth import get_admin_user, get_password_hash
@@ -43,18 +42,15 @@ async def safe_count(db, model, condition=None):
 
 @router.get("/")
 async def admin_dashboard(request: Request, admin = Depends(get_admin_user), db: AsyncSession = Depends(get_db)):
-    (
-        gallery_count, published_count, page_count,
-        tag_count, artist_count, character_count, parody_count,
-    ) = await asyncio.gather(
-        safe_count(db, Gallery),
-        safe_count(db, Gallery, Gallery.is_published == True),
-        safe_count(db, Page),
-        safe_count(db, Tag),
-        safe_count(db, Artist),
-        safe_count(db, Character),
-        safe_count(db, Parody)
-    )
+    # A request owns one AsyncSession/transaction; do not share it across
+    # concurrent asyncio tasks.
+    gallery_count = await safe_count(db, Gallery)
+    published_count = await safe_count(db, Gallery, Gallery.is_published == True)
+    page_count = await safe_count(db, Page)
+    tag_count = await safe_count(db, Tag)
+    artist_count = await safe_count(db, Artist)
+    character_count = await safe_count(db, Character)
+    parody_count = await safe_count(db, Parody)
     top_galleries_stmt = (
         select(Gallery).where(Gallery.is_published == True)
         .order_by(Gallery.page_count.desc()).limit(5).options(selectinload(Gallery.tags))

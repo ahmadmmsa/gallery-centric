@@ -20,16 +20,14 @@
       class="form-control form-control-sm text-light autocomplete-input" autocomplete="off" data-autocomplete-type="character">
     <div class="dropdown-menu w-100 autocomplete-suggestions d-none"></div>
   </div>
-  <div class="col-md">
-    <select id="filter-language" name="language" class="form-select form-select-sm text-light">
-      <option value="">All</option>
-      <option value="en" {% if language=="en" %}selected{% endif %}>English</option>
-      <option value="ja" {% if language=="ja" %}selected{% endif %}>Japanese</option>
-      <option value="zh" {% if language=="zh" %}selected{% endif %}>Chinese</option>
-      <option value="es" {% if language=="es" %}selected{% endif %}>Spanish</option>
-      <option value="ar" {% if language=="ar" %}selected{% endif %}>Arabic</option>
-    </select>
-  </div>
+	  <div class="col-md">
+	    <select id="filter-language" name="language" class="form-select form-select-sm text-light">
+	      <option value="">All</option>
+	      {% for item in public_languages() %}
+	      <option value="{{ item.code }}" {% if language == item.code %}selected{% endif %}>{{ item.name }}</option>
+	      {% endfor %}
+	    </select>
+	  </div>
   <div class="col-md-auto">
     <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
   </div>

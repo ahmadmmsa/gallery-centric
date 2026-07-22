@@ -30,6 +30,9 @@ class PageReorderRequest(BaseModel):
     page_id: int
     new_page_number: int
 
+class PageDeleteRequest(BaseModel):
+    page_ids: List[int]
+
 # Tag Schemas
 class TagCreateRequest(BaseModel):
     name: str

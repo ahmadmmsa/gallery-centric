@@ -5,7 +5,7 @@ place. Anonymous users are sent to the login page (HX-Redirect for HTMX
 requests, a plain 302 otherwise) with ``next`` pointing back to where they
 clicked.
 """
-from typing import Optional
+from typing import Iterable, Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Request, Depends, Query, Header, HTTPException
@@ -27,14 +27,21 @@ router = APIRouter()
 BUTTON_VARIANTS = {"badge", "button"}
 
 
-async def get_user_fav_ids(db: AsyncSession, user, galleries) -> set:
-    """IDs from ``galleries`` the user has favorited (empty for anonymous)."""
-    if user is None or not galleries:
+async def get_user_fav_ids(
+    db: AsyncSession,
+    user,
+    gallery_ids: Iterable[int],
+) -> set[int]:
+    """Return the supplied gallery IDs favorited by ``user``."""
+    if user is None:
+        return set()
+    gallery_ids = list(gallery_ids)
+    if not gallery_ids:
         return set()
     rows = await db.execute(
         select(user_favorites.c.gallery_id).where(
             user_favorites.c.user_id == user.id,
-            user_favorites.c.gallery_id.in_([g.id for g in galleries]),
+            user_favorites.c.gallery_id.in_(gallery_ids),
         )
     )
     return set(rows.scalars().all())

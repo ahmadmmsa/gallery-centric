@@ -42,7 +42,7 @@ async def home(request: Request, page: int = Query(1, ge=1), per_page: int = Que
     total_count = await db.scalar(select(func.count()).select_from(Gallery).where(Gallery.is_published == True)) or 0
     pagination = Pagination(page, per_page, total_count)
     galleries = await safe_execute_all(db, stmt.offset((pagination.page - 1) * per_page).limit(per_page).options(selectinload(Gallery.tags)))
-    context = {"request": request, "galleries": galleries, "pagination": pagination, "sort": sort, "per_page": per_page, "user_fav_ids": await get_user_fav_ids(db, request.state.user, galleries), "seo": get_default_seo("Home")}
+    context = {"request": request, "galleries": galleries, "pagination": pagination, "sort": sort, "per_page": per_page, "user_fav_ids": await get_user_fav_ids(db, request.state.user, [g.id for g in galleries]), "seo": get_default_seo("Home")}
     if hx_request: return templates.TemplateResponse(request, "partials/gallery_results.html", context, headers={"HX-Push-Url": f"/?page={page}&per_page={per_page}&sort={sort}"}, status_code=200)
     return templates.TemplateResponse(request, "pages/home.html", context, status_code=200)
 
@@ -59,7 +59,7 @@ async def gallery_detail(request: Request, slug: str, db: AsyncSession = Depends
     if gallery.tags:
         tag_ids = [t.id for t in gallery.tags]
         related = await safe_execute_all(db, select(Gallery).where(Gallery.is_published == True, Gallery.id != gallery.id, Gallery.tags.any(Tag.id.in_(tag_ids))).order_by(Gallery.created_at.desc()).limit(8).options(selectinload(Gallery.tags)))
-    context = {"request": request, "gallery": gallery, "pages": sorted(gallery.pages, key=lambda p: p.page_number), "related_galleries": related, "is_favorited": gallery.id in await get_user_fav_ids(db, request.state.user, [gallery]), "seo": get_gallery_seo(gallery)}
+    context = {"request": request, "gallery": gallery, "pages": sorted(gallery.pages, key=lambda p: p.page_number), "related_galleries": related, "is_favorited": gallery.id in await get_user_fav_ids(db, request.state.user, [gallery.id]), "seo": get_gallery_seo(gallery)}
     return templates.TemplateResponse(request, "pages/gallery_detail.html", context)
 
 @router.get("/read/{slug}")
@@ -78,7 +78,7 @@ async def search_results(request: Request, q: str = Query(""), tags: Optional[st
     sort_map = {'latest': 'created_at:desc', 'views': 'view_count:desc', 'favorites': 'favorite_count:desc', 'alpha': 'title:asc'}
     results = await search_service.search(db=db, query=q, include_tags=include_tags, artists=artist_list, characters=char_list, parodies=parody_list, language=language, sort=sort_map.get(sort, sort), page=page, per_page=per_page)
     pagination = Pagination(page, per_page, results.total_hits)
-    context = {"request": request, "results": results, "galleries": results.hits, "pagination": pagination, "q": q, "sort": sort, "per_page": per_page, "tags": tags, "artists": artists, "characters": characters, "parodies": parodies, "language": language, "user_fav_ids": await get_user_fav_ids(db, request.state.user, results.hits), "seo": get_default_seo("Search Results")}
+    context = {"request": request, "results": results, "galleries": results.hits, "pagination": pagination, "q": q, "sort": sort, "per_page": per_page, "tags": tags, "artists": artists, "characters": characters, "parodies": parodies, "language": language, "user_fav_ids": await get_user_fav_ids(db, request.state.user, [hit["id"] for hit in results.hits]), "seo": get_default_seo("Search Results")}
     if hx_request:
         query_params = {"page": page}
         for k, v in [("q", q), ("tags", tags), ("artists", artists), ("characters", characters), ("parodies", parodies), ("language", language)]:
@@ -153,7 +153,7 @@ async def tags_search(request: Request, page: int = Query(1, ge=1), per_page: in
     import urllib.parse
     active_tags_data = [{"tag": t, "remove_url": f"/tags/?{urllib.parse.quote(' '.join([q for q in tag_queries if q.replace('_', ' ').lower() != t.name.lower()]))}" if [q for q in tag_queries if q.replace("_", " ").lower() != t.name.lower()] else "/tags/"} for t in active_tags]
     tags_query_val = " ".join(tag_queries)
-    context = {"request": request, "active_tags_data": active_tags_data, "tags_query_val": tags_query_val, "tags": tags_query_val, "galleries": galleries, "pagination": pagination, "sort": sort, "per_page": per_page, "user_fav_ids": await get_user_fav_ids(db, request.state.user, galleries), "seo": get_default_seo("Search by Tags")}
+    context = {"request": request, "active_tags_data": active_tags_data, "tags_query_val": tags_query_val, "tags": tags_query_val, "galleries": galleries, "pagination": pagination, "sort": sort, "per_page": per_page, "user_fav_ids": await get_user_fav_ids(db, request.state.user, [g.id for g in galleries]), "seo": get_default_seo("Search by Tags")}
     if hx_request: return templates.TemplateResponse(request, "partials/gallery_results.html", context, headers={"HX-Push-Url": f"/tags/?{query_str}"})
     return templates.TemplateResponse(request, "pages/tags_search.html", context)
 

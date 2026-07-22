@@ -39,8 +39,8 @@ async def search(
         count_stmt = count_stmt.where(Gallery.search_vector.op('@@')(tsquery))
         
     if language:
-        stmt = stmt.join(Gallery.language).where(Language.name == language)
-        count_stmt = count_stmt.join(Gallery.language).where(Language.name == language)
+        stmt = stmt.join(Gallery.language).where(Language.code == language)
+        count_stmt = count_stmt.join(Gallery.language).where(Language.code == language)
 
     # Helper to build associations filters
     if include_tags:

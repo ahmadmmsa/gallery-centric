@@ -2,7 +2,7 @@ from typing import Optional, List, Any, Type
 from fastapi import APIRouter, Request, Depends, Query, Form, UploadFile, File, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 import os
 import re
@@ -21,7 +21,8 @@ from app.models.parody import Parody
 from app.models.language import Language
 
 from app.schemas.admin import (
-    GalleryCreateRequest, GalleryUpdateRequest, PageReorderRequest
+    GalleryCreateRequest, GalleryUpdateRequest, PageDeleteRequest,
+    PageReorderRequest,
 )
 from app.services import image_service, zip_service
 from app.utils.pagination import Pagination
@@ -52,6 +53,94 @@ def _remove_files(paths) -> None:
             except Exception:
                 pass
 
+
+async def _delete_gallery_pages(
+    db: AsyncSession,
+    gallery_id: int,
+    page_ids: set[int],
+) -> tuple[int, int]:
+    """Delete and renumber pages atomically while serializing gallery edits."""
+    if not page_ids:
+        raise HTTPException(status_code=400, detail="No pages selected")
+
+    gallery = (
+        await db.execute(
+            select(Gallery).where(Gallery.id == gallery_id).with_for_update()
+        )
+    ).scalars().first()
+    if not gallery:
+        raise HTTPException(status_code=404, detail="Gallery not found")
+
+    pages = list(
+        (
+            await db.execute(
+                select(Page).where(
+                    Page.gallery_id == gallery_id,
+                    Page.id.in_(page_ids),
+                )
+            )
+        ).scalars().all()
+    )
+    if len(pages) != len(page_ids):
+        raise HTTPException(
+            status_code=404,
+            detail="One or more selected pages were not found in this gallery",
+        )
+
+    # A path is removable only if no surviving Page record references it in
+    # either the full-image or thumbnail column.
+    candidate_paths = {
+        path
+        for page in pages
+        for path in (page.image_path, page.thumbnail_path)
+        if path
+    }
+    surviving_paths: set[str] = set()
+    if candidate_paths:
+        path_rows = (
+            await db.execute(
+                select(Page.image_path, Page.thumbnail_path).where(
+                    ~Page.id.in_(page_ids),
+                    or_(
+                        Page.image_path.in_(candidate_paths),
+                        Page.thumbnail_path.in_(candidate_paths),
+                    ),
+                )
+            )
+        ).all()
+        surviving_paths = {
+            path
+            for row in path_rows
+            for path in row
+            if path
+        }
+
+    for page in pages:
+        await db.delete(page)
+    await db.flush()
+
+    remaining_pages = list(
+        (
+            await db.execute(
+                select(Page)
+                .where(Page.gallery_id == gallery_id)
+                .order_by(Page.page_number, Page.id)
+            )
+        ).scalars().all()
+    )
+    for page_number, page in enumerate(remaining_pages, start=1):
+        page.page_number = page_number
+    gallery.page_count = len(remaining_pages)
+    await db.commit()
+
+    paths_to_remove = {
+        path.lstrip("/")
+        for path in candidate_paths - surviving_paths
+        if path.lstrip("/")
+    }
+    await asyncio.to_thread(_remove_files, paths_to_remove)
+    return len(pages), len(remaining_pages)
+
 async def _get_gallery_or_404(db: AsyncSession, gallery_id: int, options: list = None) -> Gallery:
     stmt = select(Gallery).where(Gallery.id == gallery_id)
     if options:
@@ -62,14 +151,18 @@ async def _get_gallery_or_404(db: AsyncSession, gallery_id: int, options: list =
     return gallery
 
 async def _get_taxonomies(db: AsyncSession):
-    return await asyncio.gather(
-        safe_execute_all(db, select(Tag).order_by(Tag.name).options(selectinload(Tag.tag_type))),
-        safe_execute_all(db, select(Artist).order_by(Artist.name)),
-        safe_execute_all(db, select(Character).order_by(Character.name)),
-        safe_execute_all(db, select(Parody).order_by(Parody.name)),
-        safe_execute_all(db, select(Language).order_by(Language.name)),
-        safe_execute_all(db, select(TagType).order_by(TagType.name))
+    # AsyncSession is transaction-scoped and cannot execute concurrently. These
+    # admin-only lookups are small, so sequential access is both safe and cheap.
+    tags = await safe_execute_all(
+        db,
+        select(Tag).order_by(Tag.name).options(selectinload(Tag.tag_type)),
     )
+    artists = await safe_execute_all(db, select(Artist).order_by(Artist.name))
+    characters = await safe_execute_all(db, select(Character).order_by(Character.name))
+    parodies = await safe_execute_all(db, select(Parody).order_by(Parody.name))
+    languages = await safe_execute_all(db, select(Language).order_by(Language.name))
+    tag_types = await safe_execute_all(db, select(TagType).order_by(TagType.name))
+    return tags, artists, characters, parodies, languages, tag_types
 
 async def _fetch_relations(db: AsyncSession, model_class: Type[Any], ids: List[int]) -> List[Any]:
     if not ids:
@@ -78,12 +171,12 @@ async def _fetch_relations(db: AsyncSession, model_class: Type[Any], ids: List[i
     return list(result.scalars().all())
 
 async def _fetch_gallery_relations(db: AsyncSession, data):
-    return await asyncio.gather(
-        _fetch_relations(db, Tag, data.tag_ids),
-        _fetch_relations(db, Artist, data.artist_ids),
-        _fetch_relations(db, Character, data.character_ids),
-        _fetch_relations(db, Parody, data.parody_ids)
-    )
+    # Keep every ORM object attached to the gallery's request session.
+    tags = await _fetch_relations(db, Tag, data.tag_ids)
+    artists = await _fetch_relations(db, Artist, data.artist_ids)
+    characters = await _fetch_relations(db, Character, data.character_ids)
+    parodies = await _fetch_relations(db, Parody, data.parody_ids)
+    return tags, artists, characters, parodies
 
 @gallery_router.get("/galleries")
 async def gallery_list(
@@ -485,33 +578,35 @@ async def page_delete(
     page_id: int,
     admin = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)):
-    page = await db.get(Page, page_id)
-    if not page:
+    gallery_id = await db.scalar(select(Page.gallery_id).where(Page.id == page_id))
+    if gallery_id is None:
         raise HTTPException(status_code=404, detail="Page not found")
-    gallery_id = page.gallery_id
-    paths_to_remove = []
-    if page.image_path:
-        img_stmt = select(Page).where(Page.image_path == page.image_path, Page.id != page.id)
-        other_img_res = await db.execute(img_stmt)
-        if not other_img_res.scalars().first():
-            local_img_path = page.image_path.lstrip('/')
-            if local_img_path:
-                paths_to_remove.append(local_img_path)
-    if page.thumbnail_path:
-        thumb_stmt = select(Page).where(Page.thumbnail_path == page.thumbnail_path, Page.id != page.id)
-        other_thumb_res = await db.execute(thumb_stmt)
-        if not other_thumb_res.scalars().first():
-            local_thumb_path = page.thumbnail_path.lstrip('/')
-            if local_thumb_path:
-                paths_to_remove.append(local_thumb_path)
-    await db.delete(page)
-    gallery = await db.get(Gallery, gallery_id)
-    if gallery:
-        count_result = await db.execute(select(func.count()).select_from(Page).where(Page.gallery_id == gallery_id))
-        gallery.page_count = count_result.scalar() or 0
-    await db.commit()
-    await asyncio.to_thread(_remove_files, paths_to_remove)
-    return {"status": "success"}
+    deleted_count, page_count = await _delete_gallery_pages(
+        db, gallery_id, {page_id}
+    )
+    return {
+        "status": "success",
+        "deleted_count": deleted_count,
+        "page_count": page_count,
+    }
+
+
+@gallery_router.delete("/galleries/{gallery_id}/pages")
+async def pages_delete(
+    request: Request,
+    gallery_id: int,
+    data: PageDeleteRequest,
+    admin = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    deleted_count, page_count = await _delete_gallery_pages(
+        db, gallery_id, set(data.page_ids)
+    )
+    return {
+        "status": "success",
+        "deleted_count": deleted_count,
+        "page_count": page_count,
+    }
 
 @gallery_router.get("/galleries/{gallery_id}/deduplicate/scan")
 async def scan_gallery_duplicates_route(
@@ -577,4 +672,3 @@ async def remove_gallery_duplicates_route(
     await db.commit()
     await asyncio.to_thread(_remove_files, paths_to_remove)
     return Response(headers={"HX-Refresh": "true"})
-

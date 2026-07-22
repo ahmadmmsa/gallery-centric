@@ -32,7 +32,7 @@ docker compose up -d
 
 Then open <http://localhost:8008>. On first launch you are redirected to `/setup` to choose the admin password — after that the site is live and you land in the admin panel.
 
-The `app` container's entrypoint runs `setup.py` automatically on every start. It is idempotent: it waits for PostgreSQL, creates the database and tables if missing, installs the full-text-search triggers, stamps Alembic at `head`, and creates the admin user. Set `SKIP_SETUP=1` to bypass it for one-off commands.
+The `app` container's entrypoint runs `setup.py` automatically on every start. It is idempotent: it waits for PostgreSQL, creates the database if missing, applies all Alembic migrations, generates runtime secrets, and creates the placeholder admin user when needed. Set `SKIP_SETUP=1` to bypass it for one-off commands.
 
 ### Production (with nginx)
 
@@ -81,7 +81,7 @@ alembic revision --autogenerate -m "describe change"
 alembic upgrade head
 ```
 
-Inside Docker, prefix with `docker compose exec app`. Note the full-text-search functions and triggers are plain SQL (not ORM state) — they are defined both in the `add_search_vector` migration and in `setup.py`, and must be kept in sync if changed.
+Inside Docker, prefix with `docker compose exec app`. The container entrypoint runs `alembic upgrade head` before starting the application, so pending migrations are applied automatically. Full-text-search functions and triggers are migration-owned SQL and must be updated through a new Alembic revision when their behavior changes.
 
 ## Project structure
 
