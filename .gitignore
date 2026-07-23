@@ -1,6 +1,7 @@
 # Environment / secrets
 .env
 *.env
+data/
 
 # Python
 __pycache__/
@@ -11,8 +12,8 @@ venv/
 .pytest_cache/
 
 # Uploads / runtime data
-uploads/
-!uploads/.gitkeep
+media/
+!media/.gitkeep
 
 # OS / editor
 .DS_Store

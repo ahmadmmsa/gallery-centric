@@ -25,8 +25,11 @@
             <li>Broken page records to delete: <strong>{{ status_data.summary.deleted_broken_page_records }}</strong></li>
             <li>Gallery page counts to update: <strong>{{ status_data.summary.updated_gallery_counts }}</strong></li>
         </ul>
+        {% if status_data.summary.restorable_folders_skipped %}
+        <p class="mb-0 mt-2"><i class="bi bi-shield-check"></i> {{ status_data.summary.restorable_folders_skipped }} restorable gallery folder(s) with a manifest were left untouched — use "Restore Galleries from Disk" to add them.</p>
+        {% endif %}
     </div>
-    
+
     {% set total_issues = status_data.summary.deleted_gallery_folders + status_data.summary.deleted_orphaned_files + status_data.summary.deleted_broken_page_records + status_data.summary.updated_gallery_counts %}
     
     {% if total_issues > 0 %}
@@ -58,6 +61,9 @@
             <li>Deleted broken page records: <strong>{{ status_data.summary.deleted_broken_page_records }}</strong></li>
             <li>Updated gallery page counts: <strong>{{ status_data.summary.updated_gallery_counts }}</strong></li>
         </ul>
+        {% if status_data.summary.restorable_folders_skipped %}
+        <p class="mb-0 mt-2"><i class="bi bi-shield-check"></i> {{ status_data.summary.restorable_folders_skipped }} restorable gallery folder(s) with a manifest were left untouched.</p>
+        {% endif %}
     </div>
     <button class="btn btn-warning" 
             hx-post="/admin/maintenance/cleanup?execute=false" 

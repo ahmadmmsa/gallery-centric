@@ -2,8 +2,9 @@
 """First-run setup for GalleryCentric.
 
 Idempotent bootstrap that works the same whether PostgreSQL runs in a
-docker-compose container or on a dedicated database host. Everything is
-driven by ``DATABASE_URL`` from the environment / .env file.
+docker-compose container or on a dedicated database host. The connection URL
+is built from the generated ``data/db_password`` file (see app/config.py); a
+``DATABASE_URL`` environment variable overrides it for external databases.
 
 Steps (all safe to re-run):
   1. Wait for the PostgreSQL server to accept connections.
@@ -127,11 +128,11 @@ async def generate_secrets() -> None:
     _log("Application secrets generated/verified (stored encrypted in the database).")
 
 
-def _announce_setup_needed(username: str) -> None:
+def _announce_setup_needed() -> None:
     _log("=" * 64)
     _log("FIRST-RUN SETUP REQUIRED")
-    _log(f"    Open {settings.BASE_URL} in your browser to set the password")
-    _log(f"    for the administrator account '{username}'.")
+    _log("    Open the site in your browser (http://localhost:8008 by default)")
+    _log("    to choose the admin username and password.")
     _log("=" * 64)
 
 
@@ -150,13 +151,16 @@ async def create_admin_user() -> None:
     from app.utils.auth import get_password_hash
 
     async with AsyncSessionLocal() as db:
-        username = settings.ADMIN_USERNAME
-        user = (await db.execute(select(User).where(User.username == username))).scalars().first()
+        # Look for any admin account (the /setup wizard may have renamed it),
+        # not the placeholder name specifically.
+        user = (await db.execute(select(User).where(User.is_admin == True))).scalars().first()  # noqa: E712
 
         if user is None:
+            # Placeholder name only; the operator picks the real username (or
+            # keeps "admin") on the web /setup page.
             db.add(
                 User(
-                    username=username,
+                    username="admin",
                     email="admin@example.com",
                     # Unusable placeholder; replaced via the web /setup page.
                     hashed_password=get_password_hash(_secrets.token_urlsafe(32)),
@@ -165,14 +169,11 @@ async def create_admin_user() -> None:
                 )
             )
             await db.commit()
-            _announce_setup_needed(username)
+            _announce_setup_needed()
         elif user.must_change_password:
-            # Setup not completed yet -> keep it as an admin and re-announce.
-            user.is_admin = True
-            await db.commit()
-            _announce_setup_needed(username)
+            _announce_setup_needed()
         else:
-            _log(f"Admin user '{username}' already configured (password set by user).")
+            _log(f"Admin user '{user.username}' already configured (password set by user).")
 
     await engine.dispose()
 

@@ -98,24 +98,24 @@
     </div>
 
     <hr class="border-secondary">
-    <h5 class="text-primary mb-3"><i class="bi bi-twitter-x"></i> Twitter / X</h5>
+    <h5 class="text-primary mb-3"><i class="bi bi-twitter-x"></i> X (Twitter)</h5>
     <div class="row">
         <div class="col-md-4 mb-3">
             <label class="form-label fw-semibold">Card Type</label>
-            <select name="SEO_TWITTER_CARD" class="form-select bg-dark text-white border-secondary">
+            <select name="SEO_X_CARD" class="form-select bg-dark text-white border-secondary">
                 {% for opt in ["summary_large_image", "summary"] %}
-                <option value="{{ opt }}" {% if values.SEO_TWITTER_CARD == opt %}selected{% endif %}>{{ opt }}</option>
+                <option value="{{ opt }}" {% if values.SEO_X_CARD == opt %}selected{% endif %}>{{ opt }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-4 mb-3">
             <label class="form-label fw-semibold">Site @handle</label>
-            <input type="text" name="SEO_TWITTER_SITE" value="{{ values.SEO_TWITTER_SITE }}"
+            <input type="text" name="SEO_X_SITE" value="{{ values.SEO_X_SITE }}"
                    class="form-control bg-dark text-white border-secondary" placeholder="@yoursite">
         </div>
         <div class="col-md-4 mb-3">
             <label class="form-label fw-semibold">Creator @handle</label>
-            <input type="text" name="SEO_TWITTER_CREATOR" value="{{ values.SEO_TWITTER_CREATOR }}"
+            <input type="text" name="SEO_X_CREATOR" value="{{ values.SEO_X_CREATOR }}"
                    class="form-control bg-dark text-white border-secondary" placeholder="@author">
         </div>
     </div>

@@ -19,7 +19,7 @@ ENV PATH=/root/.local/bin:$PATH \
 COPY . .
 
 RUN chmod +x entrypoint.sh
-RUN mkdir -p uploads/galleries
+RUN mkdir -p media/galleries
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import httpx; httpx.get('http://localhost:8008/docs', timeout=5)" || exit 1
 EXPOSE 8008

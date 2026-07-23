@@ -16,7 +16,7 @@ from app.models.parody import Parody
 from app.models.language import Language
 
 from app.schemas.admin import AdminUserCreateRequest, AdminUserUpdateRequest
-from app.services import maintenance_service
+from app.services import maintenance_service, manifest_service, bulk_import_service
 from app.utils.db_utils import safe_execute_all
 
 from app.routers.admin.helpers import form_body, redirect_to
@@ -205,3 +205,66 @@ async def get_system_cleanup_status(
     admin = Depends(get_admin_user)):
     status_data = await maintenance_service.get_maintenance_status()
     return templates.TemplateResponse(request, "admin/partials/maintenance_result.html", {"status_data": status_data})
+
+@router.post("/maintenance/restore")
+async def run_gallery_restore(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    admin = Depends(get_admin_user)):
+    status_data = await manifest_service.get_restore_status()
+    if status_data.get("status") == "running":
+        return Response(status_code=400, content="Task already running")
+    background_tasks.add_task(manifest_service.run_restore_task)
+    return templates.TemplateResponse(request, "admin/partials/restore_result.html",
+    {"status_data": {"status": "running", "task": "restore"}})
+
+@router.post("/maintenance/manifests")
+async def run_manifest_rebuild(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    admin = Depends(get_admin_user)):
+    status_data = await manifest_service.get_restore_status()
+    if status_data.get("status") == "running":
+        return Response(status_code=400, content="Task already running")
+    background_tasks.add_task(manifest_service.run_rebuild_manifests_task)
+    return templates.TemplateResponse(request, "admin/partials/restore_result.html",
+    {"status_data": {"status": "running", "task": "manifests"}})
+
+@router.get("/maintenance/restore/status")
+async def get_gallery_restore_status(
+    request: Request,
+    admin = Depends(get_admin_user)):
+    status_data = await manifest_service.get_restore_status()
+    return templates.TemplateResponse(request, "admin/partials/restore_result.html", {"status_data": status_data})
+
+@router.get("/import/scan")
+async def bulk_import_scan(
+    request: Request,
+    admin = Depends(get_admin_user)):
+    status_data = await bulk_import_service.get_bulk_import_status()
+    if status_data.get("status") == "running":
+        return templates.TemplateResponse(request, "admin/partials/bulk_import_result.html", {"status_data": status_data})
+    scan_data = await bulk_import_service.scan()
+    return templates.TemplateResponse(request, "admin/partials/bulk_import_scan.html", {"scan": scan_data})
+
+@router.post("/import/run")
+async def bulk_import_run(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    target: str = Form(...),
+    admin = Depends(get_admin_user)):
+    status_data = await bulk_import_service.get_bulk_import_status()
+    if status_data.get("status") == "running":
+        return Response(status_code=400, content="Task already running")
+    if not bulk_import_service.validate_target(target):
+        raise HTTPException(status_code=400, detail="Invalid import target")
+    background_tasks.add_task(bulk_import_service.run_bulk_import_task, target)
+    return templates.TemplateResponse(request, "admin/partials/bulk_import_result.html",
+    {"status_data": {"status": "running"}})
+
+@router.get("/import/status")
+async def bulk_import_status(
+    request: Request,
+    admin = Depends(get_admin_user)):
+    status_data = await bulk_import_service.get_bulk_import_status()
+    return templates.TemplateResponse(request, "admin/partials/bulk_import_result.html", {"status_data": status_data})

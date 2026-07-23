@@ -1,0 +1,71 @@
+<div id="bulk-import-result">
+{% if scan.folders or scan.root_images %}
+    <div class="table-responsive mt-3">
+        <table class="table table-dark table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>Folder</th>
+                    <th>Title</th>
+                    <th>Artist</th>
+                    <th>Tags</th>
+                    <th class="text-end">Images</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in scan.folders %}
+                <tr>
+                    <td><code>{{ f.folder }}</code></td>
+                    <td>{{ f.title }}</td>
+                    <td>{{ f.artist or "—" }}</td>
+                    <td>
+                        {% for t in f.tags %}<span class="badge bg-secondary me-1">misc:{{ t }}</span>{% endfor %}
+                    </td>
+                    <td class="text-end">{{ f.image_count }}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-primary"
+                                hx-post="/admin/import/run"
+                                hx-vals='{"target": {{ f.folder | tojson }}}'
+                                hx-target="#bulk-import-result"
+                                hx-swap="outerHTML"
+                                {% if not f.image_count %}disabled{% endif %}>
+                            Import
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if scan.root_images %}
+                <tr>
+                    <td colspan="4">Loose images in <code>media/imports/</code> &rarr; appended to the <strong>misc</strong> gallery</td>
+                    <td class="text-end">{{ scan.root_images }}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-primary"
+                                hx-post="/admin/import/run"
+                                hx-vals='{"target": "__root__"}'
+                                hx-target="#bulk-import-result"
+                                hx-swap="outerHTML">
+                            Import
+                        </button>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <button class="btn btn-primary"
+            hx-post="/admin/import/run"
+            hx-vals='{"target": "__all__"}'
+            hx-target="#bulk-import-result"
+            hx-swap="outerHTML">
+        <i class="bi bi-box-arrow-in-down"></i> Import All
+    </button>
+{% else %}
+    <div class="alert alert-info mt-3">Nothing to import: no folders or images found in <code>media/imports/</code>.</div>
+{% endif %}
+    <button class="btn btn-outline-secondary"
+            hx-get="/admin/import/scan"
+            hx-target="#bulk-import-result"
+            hx-swap="outerHTML">
+        <i class="bi bi-arrow-repeat"></i> Rescan
+    </button>
+</div>

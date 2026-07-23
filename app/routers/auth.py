@@ -34,7 +34,7 @@ def _set_auth_cookie(response: Response, username: str) -> Response:
         value=f"Bearer {access_token}",
         httponly=True,
         samesite="lax",
-        secure=settings.BASE_URL.startswith("https"),
+        secure=runtime_config.base_url().startswith("https"),
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
@@ -169,7 +169,7 @@ async def register(
 @router.get("/logout")
 async def logout():
     res = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-    res.delete_cookie("access_token", samesite="lax", secure=settings.BASE_URL.startswith("https"))
+    res.delete_cookie("access_token", samesite="lax", secure=runtime_config.base_url().startswith("https"))
     return res
 
 

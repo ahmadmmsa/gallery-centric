@@ -30,7 +30,9 @@ A self-hosted image gallery web application. Upload galleries as ZIP archives or
 docker compose up -d
 ```
 
-Then open <http://localhost:8008>. On first launch you are redirected to `/setup` to choose the admin password — after that the site is live and you land in the admin panel.
+Then open <http://localhost:8008>. On first launch you are redirected to `/setup` to choose the admin username and password (and optionally the site name and public base URL) — after that the site is live and you land in the admin panel.
+
+There is no `.env` file and nothing to configure up front: the database password is generated automatically on first boot (`data/db_password`, created by the `db-init` compose service and shared with PostgreSQL), and everything else lives in the database.
 
 The `app` container's entrypoint runs `setup.py` automatically on every start. It is idempotent: it waits for PostgreSQL, creates the database if missing, applies all Alembic migrations, generates runtime secrets, and creates the placeholder admin user when needed. Set `SKIP_SETUP=1` to bypass it for one-off commands.
 
@@ -51,26 +53,24 @@ You need a reachable PostgreSQL server.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env      # point DATABASE_URL at your PostgreSQL server
+export DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/gallery
 python setup.py           # one-time bootstrap (safe to re-run)
 uvicorn app.main:app --host 0.0.0.0 --port 8008 --reload
 ```
 
 ## Configuration
 
-All configuration is via `.env` (see [.env.example](.env.example)):
+There is no `.env` file. Configuration lives in three places:
 
-| Variable | Purpose |
-|---|---|
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Credentials for the compose PostgreSQL container |
-| `DATABASE_URL` | Async SQLAlchemy URL, e.g. `postgresql+asyncpg://user:pass@gallerydb/gallery_centric` |
-| `BASE_URL` | Public base URL (enables `Secure` cookies when `https`) |
-| `UPLOAD_DIR` | Where uploaded images are stored (default `uploads`) |
-| `MAX_UPLOAD_SIZE_MB` | Upload size limit |
-| `ADMIN_USERNAME` | Admin account username (created by `setup.py`) |
-| `DEBUG` | Verbose error detail in 503 pages |
+| Where | What | Set how |
+|---|---|---|
+| `data/db_password` | Generated database password (the only pre-database secret) | Auto-generated on first `docker compose up`; chmod 600, gitignored |
+| `app_settings` table | Base URL, upload size limit, site name/description, SEO/social tags, generated secrets (`SECRET_KEY`, `ALTCHA_HMAC_KEY`, stored encrypted) | First-run `/setup` wizard, then the admin panel (Settings / SEO) |
+| [app/config.py](app/config.py) | Structural constants: upload directory, JWT algorithm, token lifetime | Edit the code |
 
-**Secrets are not set in `.env`.** `SECRET_KEY` and `ALTCHA_HMAC_KEY` are generated on first launch and stored (encrypted) in the database. The admin password is set interactively at `/setup` on first visit. Site name and SEO/social tags are configured in the admin panel (Settings) and stored in the database.
+Environment variables are honoured only as developer overrides for running outside compose: `DATABASE_URL` (external database), `DB_HOST`, and `DEBUG=1` (verbose error detail in 503 pages). None are required.
+
+The admin account is created as a placeholder by `setup.py`; its username and password are chosen interactively at `/setup` on first visit, and the password is stored bcrypt-hashed.
 
 ## Database migrations
 
@@ -88,21 +88,21 @@ Inside Docker, prefix with `docker compose exec app`. The container entrypoint r
 ```
 app/
 ├── main.py              # FastAPI app, CSRF middleware, error handlers
-├── config.py            # .env-backed settings
+├── config.py            # Structural constants + DATABASE_URL from data/db_password
 ├── database.py          # Async engine + session
 ├── models/              # SQLAlchemy models (gallery, page, tag, taxonomy, user, app_setting)
 ├── schemas/             # Pydantic schemas
 ├── routers/
 │   ├── frontend.py      # Public pages: home, gallery, reader, search, tag/artist/... pages
 │   ├── auth.py          # Login, register (ALTCHA), logout, change password
-│   ├── setup.py         # First-run admin password setup
+│   ├── setup.py         # First-run setup wizard (admin account, site basics)
 │   └── admin/           # Admin panel: galleries, taxonomy, settings
 ├── services/            # Image pipeline, ZIP extraction, search, runtime config, maintenance
 ├── templates/           # Jinja2: base, pages/, partials/, admin/, auth/
 ├── static/              # CSS + JS (reader, upload, filters)
 └── utils/               # Auth, CSRF, deps, pagination, SEO, slugify, templates
 migrations/              # Alembic environment + versions
-uploads/                 # Uploaded images, organized per gallery slug (gitignored)
+media/                   # Uploaded images, organized per gallery slug (gitignored)
 setup.py                 # Idempotent first-run bootstrap
 entrypoint.sh            # Container entrypoint: setup.py then uvicorn
 ```

@@ -29,6 +29,9 @@ DEFAULTS = {
     # --- Site identity ---
     "SITE_NAME": "Gallery Centric",
     "SITE_DESCRIPTION": "",
+    # --- Deployment (first-run wizard prefills these; editable in Site Settings) ---
+    "BASE_URL": "http://localhost:8008",
+    "MAX_UPLOAD_SIZE_MB": "500",
     # --- SEO: general ---
     "SEO_KEYWORDS": "",
     "SEO_ROBOTS": "index, follow",
@@ -39,10 +42,10 @@ DEFAULTS = {
     "SEO_OG_SITE_NAME": "",
     "SEO_FB_APP_ID": "",
     "SEO_FB_PAGES": "",
-    # --- SEO: Twitter / X ---
-    "SEO_TWITTER_CARD": "summary_large_image",
-    "SEO_TWITTER_SITE": "",
-    "SEO_TWITTER_CREATOR": "",
+    # --- SEO: X (Twitter) ---
+    "SEO_X_CARD": "summary_large_image",
+    "SEO_X_SITE": "",
+    "SEO_X_CREATOR": "",
 }
 
 _cache: dict = {}
@@ -132,6 +135,22 @@ async def set_many(db: AsyncSession, values: dict) -> None:
 
 def get(key: str, default=None):
     return _cache.get(key, default)
+
+
+def get_int(key: str, default: int) -> int:
+    """Integer setting with a fallback for unset/blank/garbage values."""
+    try:
+        return int(_cache.get(key) or default)
+    except (TypeError, ValueError):
+        return default
+
+
+def base_url() -> str:
+    return (_cache.get("BASE_URL") or DEFAULTS["BASE_URL"]).rstrip("/")
+
+
+def max_upload_mb() -> int:
+    return get_int("MAX_UPLOAD_SIZE_MB", int(DEFAULTS["MAX_UPLOAD_SIZE_MB"]))
 
 
 def secret_key() -> str:

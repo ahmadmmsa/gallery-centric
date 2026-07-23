@@ -257,6 +257,55 @@
     <div class="col-md-12">
         <div class="card bg-dark border-secondary">
             <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"> Restore &amp; Bulk Import</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Adopt gallery folders copied into <code>media/galleries/</code> from another installation.
+                    Each folder's <code>gallery.json</code> manifest recreates the gallery with its title, tags,
+                    artists and pages; folders without a manifest are added as unpublished drafts named after
+                    the folder. Galleries already in the database are left untouched. "Rebuild Manifest Files"
+                    rewrites the manifest for every existing gallery (run it once so older galleries become portable).
+                </p>
+                <div id="restore-result">
+                    <button class="btn btn-primary"
+                            hx-post="/admin/maintenance/restore"
+                            hx-target="#restore-result"
+                            hx-swap="outerHTML">
+                        <i class="bi bi-database-down"></i> Restore Galleries from Disk
+                    </button>
+                    <button class="btn btn-outline-secondary"
+                            hx-post="/admin/maintenance/manifests"
+                            hx-target="#restore-result"
+                            hx-swap="outerHTML">
+                        <i class="bi bi-filetype-json"></i> Rebuild Manifest Files
+                    </button>
+                </div>
+                <hr class="border-secondary">
+                <p class="text-muted">
+                    Bulk Import turns folders dropped into <code>media/imports/</code> into unpublished draft
+                    galleries. Folder names are parsed for metadata: the first <code>[...]</code> or
+                    <code>(...)</code> group is the artist, later groups become <code>misc:</code> tags, and the
+                    text outside brackets is the title. Loose images at the imports root are appended to a
+                    gallery named "misc". Scan first to preview how each folder will be parsed.
+                </p>
+                <div id="bulk-import-result">
+                    <button class="btn btn-info"
+                            hx-get="/admin/import/scan"
+                            hx-target="#bulk-import-result"
+                            hx-swap="outerHTML">
+                        <i class="bi bi-search"></i> Scan Import Folder
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"> System Maintenance</h5>
             </div>
             <div class="card-body">

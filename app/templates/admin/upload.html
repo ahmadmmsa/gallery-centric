@@ -21,16 +21,15 @@
                 <i class="bi bi-arrow-left"></i> Edit
             </a>
             {% if gallery.is_published %}
-            <a href="/gallery/{{ gallery.slug }}" target="_blank" class="btn btn-sm btn-primary">
-                <i class="bi bi-eye"></i> View
-            </a>
-            <button type="submit" class="btn btn-sm btn-warning" formmethod="post"
-                formaction="/admin/galleries/{{ gallery.id }}/unpublish">
+
+            <button type="submit" class="btn btn-sm btn-warning" formmethod="post" formaction="/admin/galleries/{{ gallery.id }}/unpublish">
                 <i class="bi bi-eye-slash"></i> Unpublish
             </button>
+            <a href="/gallery/{{ gallery.slug }}" target="_blank" class="btn btn-sm btn-primary">
+                <i class="bi bi-eye"></i> View
+            </a>            
             {% else %}
-            <button type="submit" class="btn btn-sm btn-success" formmethod="post"
-                formaction="/admin/galleries/{{ gallery.id }}/publish">
+            <button type="submit" class="btn btn-sm btn-success" formmethod="post" formaction="/admin/galleries/{{ gallery.id }}/publish">
                 <i class="bi bi-cloud-upload"></i> Publish
             </button>
             {% endif %}
@@ -79,33 +78,6 @@
                         </div>
                         <div class="compact-scroll pe-1" id="uploadQueueContainer">
                             </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card bg-dark border-secondary mb-3">
-        <div class="card-header border-secondary p-2 d-flex justify-content-between align-items-center bg-transparent">
-            <span class="small fw-bold"><i class="bi bi-hdd-network text-info me-1"></i> Server Import</span>
-            <button class="btn btn-sm btn-outline-info py-0" 
-                hx-get="/admin/galleries/{{ gallery.id }}/upload-find" 
-                hx-target="#importFoldersList" 
-                hx-indicator="#scanFoldersIndicator">
-                <span class=" htmx-indicator me-1" id="scanFoldersIndicator" role="status" aria-hidden="true"></span>
-                Scan /uploads/imports
-            </button>
-        </div>
-        <div class="card-body p-2">
-            <div class="row g-2">
-                <div class="col-md-4" id="importFoldersList">
-                    <div class="text-secondary text-center py-3 border border-secondary rounded border-dashed h-100 small">
-                        Click Scan to find folders.
-                    </div>
-                </div>
-                <div class="col-md-8" id="importFolderContents">
-                    <div class="text-secondary text-center py-3 border border-secondary rounded border-dashed h-100 small">
-                        Select a folder to view contents.
                     </div>
                 </div>
             </div>

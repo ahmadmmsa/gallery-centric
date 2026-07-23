@@ -80,7 +80,7 @@ class CsrfMiddleware:
         csrf_token = generate_csrf_token()
         state["csrf_token"] = csrf_token
         cookie = f"{CSRF_COOKIE_NAME}={csrf_token}; Path=/; Max-Age={60 * 60 * 24 * 7}; SameSite=lax"
-        if settings.BASE_URL.startswith("https"):
+        if runtime_config.base_url().startswith("https"):
             cookie += "; Secure"
 
         async def send_with_cookie(message):
@@ -98,7 +98,7 @@ os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 # Mount static and upload files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
-app.mount(f"/{settings.UPLOAD_DIR}", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+app.mount(f"/{settings.UPLOAD_DIR}", StaticFiles(directory=settings.UPLOAD_DIR), name="media")
 
 # Include routers
 app.include_router(setup.router, dependencies=[Depends(verify_csrf)])

@@ -1,7 +1,7 @@
 """At-rest encryption for secrets stored in the database.
 
 Encryption needs one key that cannot live in the database it protects, so we
-keep a Fernet master key in a file on the persistent uploads volume. It is
+keep a Fernet master key in a file on the persistent media volume. It is
 generated on first use and is never written to .env or committed to git.
 """
 import os

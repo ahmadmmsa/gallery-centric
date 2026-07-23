@@ -1,0 +1,10 @@
+<!-- Combined results container (HTMX swap target): grid + pagination -->
+<div id="admin-gallery-results">
+    {% include 'admin/partials/gallery_card.html' %}
+
+    <div class="mt-4">
+        {% set pager_target = '#admin-gallery-results' %}
+        {% set pager_swap = 'outerHTML' %}
+        {% include 'partials/pagination.html' %}
+    </div>
+</div>

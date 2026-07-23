@@ -23,9 +23,8 @@
     {% if not exact_match.found and query %}
     <button type="button" class="list-group-item list-group-item-action list-group-item-success"
         hx-post="/admin/taxonomy/create" hx-vals='{"name":{{ query | tojson }},"type":"{{ type }}"}'
-        {% if type == "tag" %}hx-include="#{{ type }}-tag-type-select"{% endif %}
         hx-target="#{{ type }}-chips" hx-swap="beforeend">
-        <i class="bi bi-plus-circle"></i> Create new: <strong>{% if type == 'tag' and tag_type %}{{ tag_type }}:{% endif %}{{ query }}</strong>
+        <i class="bi bi-plus-circle"></i> Create new: <strong>{{ query }}</strong>
     </button>
     {% endif %}
 </div>

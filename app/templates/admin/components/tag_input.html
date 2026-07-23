@@ -6,37 +6,17 @@
         document.getElementById('{{ type }}-results').innerHTML = '';
      ">
      
-    {% if type == "tag" %}
-    <div class="input-group">
-        <select id="{{ type }}-tag-type-select" name="tag_type" class="form-select text-light border-secondary bg-dark tag-type-select" onchange="htmx.trigger(document.getElementById('{{ type }}-search'), 'search')">
-            <option value="">All Types</option>
-            {% for tt in tag_types %}
-            <option value="{{ tt.name }}">{{ tt.name }}</option>
-            {% endfor %}
-        </select>
-        <input type="text" id="{{ type }}-search" name="q" class="form-control text-light border-secondary"
-            placeholder="Search or create {{ type }}s..." 
-            hx-get="/admin/taxonomy/search"
-            hx-trigger="input changed delay:300ms, search" 
-            hx-vals='js:{"type": "{{ type }}", "tag_type": document.getElementById("{{ type }}-tag-type-select").value}' 
-            hx-target="#{{ type }}-results"
-            hx-swap="innerHTML" 
-            autocomplete="off"
-            onblur="setTimeout(() => { document.getElementById('{{ type }}-results').innerHTML = '' }, 200)"
-            onfocus="if(this.value) htmx.trigger(this, 'search')">
-    </div>
-    {% else %}
     <input type="text" id="{{ type }}-search" name="q" class="form-control text-light border-secondary"
-        placeholder="Search or create {{ type }}s..." 
+        placeholder="{% if type == 'tag' %}tagtype:tagname{% else %}Search or create {{ type }}s...{% endif %}"
         hx-get="/admin/taxonomy/search"
-        hx-trigger="input changed delay:300ms, search" 
-        hx-vals='{"type":"{{ type }}"}' 
+        hx-trigger="input changed delay:300ms, search"
+        hx-vals='{"type":"{{ type }}"}'
         hx-target="#{{ type }}-results"
-        hx-swap="innerHTML" 
+        hx-swap="innerHTML"
         autocomplete="off"
         onblur="setTimeout(() => { document.getElementById('{{ type }}-results').innerHTML = '' }, 200)"
         onfocus="if(this.value) htmx.trigger(this, 'search')">
-    {% endif %}
+
 
     <div id="{{ type }}-results" class="position-absolute w-100 z-3 mt-1">
     </div>

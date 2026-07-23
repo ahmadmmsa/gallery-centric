@@ -1,0 +1,22 @@
+<div class="d-flex gap-1 flex-shrink-0" id="publish-toggle-{{ gallery.id }}">
+    {% if gallery.is_published %}
+        <a href="/gallery/{{ gallery.slug }}" target="_blank" class="badge bg-secondary text-white text-decoration-none" title="View Live">
+            <i class="bi bi-eye"></i>
+        </a>
+        <button class="btn btn-sm btn-outline-warning py-0 px-2 fs-xxs"
+            hx-post="/admin/galleries/{{ gallery.id }}/unpublish"
+            hx-target="#publish-toggle-{{ gallery.id }}"
+            hx-swap="outerHTML"
+            title="Unpublish Gallery">
+            <i class="bi bi-eye-slash me-1"></i>Unpublish
+        </button>
+    {% else %}
+        <button class="btn btn-sm btn-outline-success py-0 px-2 fs-xxs"
+            hx-post="/admin/galleries/{{ gallery.id }}/publish"
+            hx-target="#publish-toggle-{{ gallery.id }}"
+            hx-swap="outerHTML"
+            title="Publish Gallery">
+            <i class="bi bi-check-circle me-1"></i>Publish
+        </button>
+    {% endif %}
+</div>

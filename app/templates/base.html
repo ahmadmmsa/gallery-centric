@@ -23,10 +23,10 @@
     {% if setting('SEO_FB_APP_ID') %}<meta property="fb:app_id" content="{{ setting('SEO_FB_APP_ID') }}">{% endif %}
     {% if setting('SEO_FB_PAGES') %}<meta property="fb:pages" content="{{ setting('SEO_FB_PAGES') }}">{% endif %}
 
-    {# Twitter / X #}
-    <meta name="twitter:card" content="{{ setting('SEO_TWITTER_CARD') or 'summary_large_image' }}">
-    {% if setting('SEO_TWITTER_SITE') %}<meta name="twitter:site" content="{{ setting('SEO_TWITTER_SITE') }}">{% endif %}
-    {% if setting('SEO_TWITTER_CREATOR') %}<meta name="twitter:creator" content="{{ setting('SEO_TWITTER_CREATOR') }}">{% endif %}
+    {# X (Twitter) — the "twitter:*" meta names are the standard X still reads #}
+    <meta name="twitter:card" content="{{ setting('SEO_X_CARD') or 'summary_large_image' }}">
+    {% if setting('SEO_X_SITE') %}<meta name="twitter:site" content="{{ setting('SEO_X_SITE') }}">{% endif %}
+    {% if setting('SEO_X_CREATOR') %}<meta name="twitter:creator" content="{{ setting('SEO_X_CREATOR') }}">{% endif %}
     <meta name="twitter:title" content="{{ seo.title }}">
     <meta name="twitter:description" content="{{ seo.description }}">
     {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}

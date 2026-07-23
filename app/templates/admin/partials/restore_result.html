@@ -1,0 +1,62 @@
+<div id="restore-result">
+{% if status_data.status == "running" %}
+    <div class="mt-3 text-warning" hx-get="/admin/maintenance/restore/status" hx-trigger="every 2s" hx-swap="outerHTML" hx-target="#restore-result">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        {% if status_data.task == "manifests" %}
+            Writing manifest files for all galleries...
+        {% else %}
+            Scanning gallery folders and restoring... This may take a moment.
+        {% endif %}
+    </div>
+{% elif status_data.status == "error" %}
+    <div class="alert alert-danger mt-3">
+        <h5 class="alert-heading"><i class="bi bi-x-circle"></i> Error During {{ "Manifest Rebuild" if status_data.task == "manifests" else "Restore" }}</h5>
+        <p class="mb-0">{{ status_data.error }}</p>
+    </div>
+{% elif status_data.status == "completed_restore" %}
+    <div class="alert alert-info mt-3">
+        <h5 class="alert-heading"><i class="bi bi-check-circle"></i> Restore Complete</h5>
+        <ul class="mb-0">
+            <li>Galleries restored from manifests: <strong>{{ status_data.summary.restored }}</strong></li>
+            <li>Folders adopted as drafts (no manifest): <strong>{{ status_data.summary.restored_without_manifest }}</strong></li>
+            <li>Folders skipped (already in database): <strong>{{ status_data.summary.skipped_existing }}</strong></li>
+            <li>Folders failed: <strong>{{ status_data.summary.failed | length }}</strong></li>
+        </ul>
+    </div>
+    {% if status_data.summary.warnings %}
+    <div class="alert alert-warning mt-2">
+        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Warnings</h6>
+        <ul class="mb-0">
+            {% for warning in status_data.summary.warnings %}<li>{{ warning }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% if status_data.summary.failed %}
+    <div class="alert alert-danger mt-2">
+        <h6 class="alert-heading"><i class="bi bi-x-circle"></i> Failed Folders</h6>
+        <ul class="mb-0">
+            {% for item in status_data.summary.failed %}<li><code>{{ item.folder }}</code>: {{ item.reason }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+{% elif status_data.status == "completed_manifests" %}
+    <div class="alert alert-success mt-3">
+        <h5 class="alert-heading"><i class="bi bi-check-circle"></i> Manifest Rebuild Complete</h5>
+        <p class="mb-0">Manifest files written: <strong>{{ status_data.summary.manifests_written }}</strong></p>
+    </div>
+{% endif %}
+{% if status_data.status != "running" %}
+    <button class="btn btn-primary"
+            hx-post="/admin/maintenance/restore"
+            hx-target="#restore-result"
+            hx-swap="outerHTML">
+        <i class="bi bi-database-down"></i> Restore Galleries from Disk
+    </button>
+    <button class="btn btn-outline-secondary"
+            hx-post="/admin/maintenance/manifests"
+            hx-target="#restore-result"
+            hx-swap="outerHTML">
+        <i class="bi bi-filetype-json"></i> Rebuild Manifest Files
+    </button>
+{% endif %}
+</div>

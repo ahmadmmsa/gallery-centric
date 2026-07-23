@@ -1,11 +1,10 @@
 from typing import Optional, List, Any, Type
-from fastapi import APIRouter, Request, Depends, Query, Form, UploadFile, File, HTTPException, Response
+from fastapi import APIRouter, Request, Depends, Query, Form, Header, UploadFile, File, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 import os
-import re
 import logging
 import tempfile
 import asyncio
@@ -14,7 +13,7 @@ import aiofiles
 from app.database import get_db
 from app.utils.auth import get_admin_user
 from app.models.gallery import Gallery, Page
-from app.models.tag import Tag, TagType
+from app.models.tag import Tag
 from app.models.artist import Artist
 from app.models.character import Character
 from app.models.parody import Parody
@@ -24,10 +23,9 @@ from app.schemas.admin import (
     GalleryCreateRequest, GalleryUpdateRequest, PageDeleteRequest,
     PageReorderRequest,
 )
-from app.services import image_service, zip_service
+from app.services import image_service, zip_service, runtime_config, manifest_service, merge_service
 from app.utils.pagination import Pagination
 from app.utils.db_utils import safe_execute_all, safe_execute_first
-from app.config import settings
 
 from app.routers.admin.helpers import form_body, redirect_to, _gen_slug
 from app.utils.templates import templates
@@ -35,14 +33,6 @@ from app.utils.templates import templates
 gallery_router = APIRouter()
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
-
-def _imports_folder_path(folder_name: str) -> str:
-    """Resolve a folder under uploads/imports, rejecting path traversal."""
-    base = os.path.realpath(os.path.join(settings.UPLOAD_DIR, "imports"))
-    target = os.path.realpath(os.path.join(base, folder_name))
-    if target == base or os.path.commonpath([base, target]) != base:
-        raise HTTPException(status_code=400, detail="Invalid folder name")
-    return target
 
 def _remove_files(paths) -> None:
     """Best-effort deletion of a collection of local file paths (sync; run in a thread)."""
@@ -132,6 +122,7 @@ async def _delete_gallery_pages(
         page.page_number = page_number
     gallery.page_count = len(remaining_pages)
     await db.commit()
+    await manifest_service.write_manifest(db, gallery_id)
 
     paths_to_remove = {
         path.lstrip("/")
@@ -150,19 +141,9 @@ async def _get_gallery_or_404(db: AsyncSession, gallery_id: int, options: list =
         raise HTTPException(status_code=404, detail="Gallery not found")
     return gallery
 
-async def _get_taxonomies(db: AsyncSession):
-    # AsyncSession is transaction-scoped and cannot execute concurrently. These
-    # admin-only lookups are small, so sequential access is both safe and cheap.
-    tags = await safe_execute_all(
-        db,
-        select(Tag).order_by(Tag.name).options(selectinload(Tag.tag_type)),
-    )
-    artists = await safe_execute_all(db, select(Artist).order_by(Artist.name))
-    characters = await safe_execute_all(db, select(Character).order_by(Character.name))
-    parodies = await safe_execute_all(db, select(Parody).order_by(Parody.name))
-    languages = await safe_execute_all(db, select(Language).order_by(Language.name))
-    tag_types = await safe_execute_all(db, select(TagType).order_by(TagType.name))
-    return tags, artists, characters, parodies, languages, tag_types
+async def _get_languages(db: AsyncSession):
+    # Taxonomy pickers are htmx-driven; the form only needs the language list.
+    return await safe_execute_all(db, select(Language).order_by(Language.name))
 
 async def _fetch_relations(db: AsyncSession, model_class: Type[Any], ids: List[int]) -> List[Any]:
     if not ids:
@@ -182,8 +163,9 @@ async def _fetch_gallery_relations(db: AsyncSession, data):
 async def gallery_list(
     request: Request,
     page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=10, le=50),
+    per_page: int = Query(30, ge=10, le=50),
     q: Optional[str] = Query(None),
+    hx_request: Optional[str] = Header(None),
     admin = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)):
     stmt = select(Gallery).order_by(Gallery.created_at.desc())
@@ -210,8 +192,17 @@ async def gallery_list(
         "admin": admin,
         "galleries": galleries,
         "pagination": pagination,
-        "q": q
+        "q": q,
+        "per_page": per_page,
     }
+    if hx_request:
+        push_url = f"/admin/galleries?page={pagination.page}"
+        if q:
+            push_url += f"&q={q}"
+        return templates.TemplateResponse(
+            request, "admin/partials/gallery_results.html", context,
+            headers={"HX-Push-Url": push_url},
+        )
     return templates.TemplateResponse(request, "admin/gallery_list.html", context)
 
 @gallery_router.get("/galleries/new")
@@ -220,16 +211,11 @@ async def gallery_new(
     admin = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
-    tags, artists, characters, parodies, languages, tag_types = await _get_taxonomies(db)
+    languages = await _get_languages(db)
     context = {
         "request": request,
         "admin": admin,
-        "tags": tags,
-        "artists": artists,
-        "characters": characters,
-        "parodies": parodies,
         "languages": languages,
-        "tag_types": tag_types
     }
     return templates.TemplateResponse(request, "admin/gallery_form.html", context)
 
@@ -263,6 +249,7 @@ async def gallery_create(
     db.add(gallery)
     await db.commit()
     await db.refresh(gallery)
+    await manifest_service.write_manifest(db, gallery.id)
     return RedirectResponse(url=f"/admin/galleries/{gallery.id}/edit", status_code=302)
 
 @gallery_router.get("/galleries/{gallery_id}/edit")
@@ -283,21 +270,12 @@ async def gallery_edit(
     gallery = result.scalars().first()
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
-    tags, artists, characters, parodies, languages, tag_types = await _get_taxonomies(db)
+    languages = await _get_languages(db)
     context = {
         "request": request,
         "admin": admin,
         "gallery": gallery,
-        "tags": tags,
-        "artists": artists,
-        "characters": characters,
-        "parodies": parodies,
         "languages": languages,
-        "tag_types": tag_types,
-        "gallery_tag_ids": [t.id for t in gallery.tags],
-        "gallery_artist_ids": [a.id for a in gallery.artists],
-        "gallery_character_ids": [c.id for c in gallery.characters],
-        "gallery_parody_ids": [p.id for p in gallery.parodies]
     }
     return templates.TemplateResponse(request, "admin/gallery_form.html", context)
 
@@ -321,6 +299,7 @@ async def gallery_update(
     gallery.seo_description = data.seo_description
     gallery.tags, gallery.artists, gallery.characters, gallery.parodies = await _fetch_gallery_relations(db, data)
     await db.commit()
+    await manifest_service.write_manifest(db, gallery.id)
     return RedirectResponse(url=f"/admin/galleries/{gallery.id}/edit", status_code=302)
 
 @gallery_router.post("/galleries/{gallery_id}/delete")
@@ -357,7 +336,10 @@ async def gallery_publish(request: Request,gallery_id: int,admin = Depends(get_a
     ])
     gallery.is_published = True
     await db.commit()
+    await manifest_service.write_manifest(db, gallery.id)
 
+    if "hx-request" in request.headers:
+        return templates.TemplateResponse(request, "admin/partials/publish_toggle.html", {"gallery": gallery})
     return RedirectResponse(url=f"/admin/galleries/{gallery.id}/edit", status_code=302)
 
 @gallery_router.post("/galleries/{gallery_id}/unpublish")
@@ -365,7 +347,10 @@ async def gallery_unpublish(request: Request,gallery_id: int,admin = Depends(get
     gallery = await _get_gallery_or_404(db, gallery_id)
     gallery.is_published = False
     await db.commit()
+    await manifest_service.write_manifest(db, gallery.id)
 
+    if "hx-request" in request.headers:
+        return templates.TemplateResponse(request, "admin/partials/publish_toggle.html", {"gallery": gallery})
     return RedirectResponse(url=f"/admin/galleries/{gallery.id}/edit", status_code=302)
 
 @gallery_router.get("/galleries/{gallery_id}/upload")
@@ -395,7 +380,8 @@ async def gallery_upload_zip(
     )
     start_page = (max_page_result.scalar() or 0) + 1
     CHUNK_SIZE = 1024 * 1024
-    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    max_mb = runtime_config.max_upload_mb()
+    max_bytes = max_mb * 1024 * 1024
     temp_zip_path = None
     try:
         # Create the temp path without holding a sync file handle, then stream
@@ -410,10 +396,11 @@ async def gallery_upload_zip(
                     break
                 total += len(chunk)
                 if total > max_bytes:
-                    raise HTTPException(status_code=413, detail=f"Upload exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
+                    raise HTTPException(status_code=413, detail=f"Upload exceeds {max_mb} MB limit")
                 await temp_zip.write(chunk)
         await zip_service.process_zip_upload(temp_zip_path, gallery, db, start_page=start_page)
         await db.commit()
+        await manifest_service.write_manifest(db, gallery_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -441,8 +428,9 @@ async def gallery_upload_image(
     try:
         file.file.seek(0)
         file_data = await file.read()
-        if len(file_data) > settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024:
-            raise HTTPException(status_code=413, detail=f"Upload exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit")
+        max_mb = runtime_config.max_upload_mb()
+        if len(file_data) > max_mb * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=f"Upload exceeds {max_mb} MB limit")
         image_path, width, height = await image_service.process_page(
             file_data, gallery.slug, page_number
         )
@@ -463,6 +451,7 @@ async def gallery_upload_image(
             gallery.cover_path = await image_service.generate_cover(file_data, gallery.slug)
             gallery.thumbnail_path = await image_service.generate_thumbnail(file_data, gallery.slug)
         await db.commit()
+        await manifest_service.write_manifest(db, gallery_id)
     except HTTPException:
         await db.rollback()
         raise
@@ -472,84 +461,39 @@ async def gallery_upload_image(
         raise HTTPException(status_code=400, detail=str(e))
     return {"status": "success", "page_number": page_number}
 
-@gallery_router.get("/galleries/{gallery_id}/upload-find")
-async def gallery_upload_find(
+@gallery_router.get("/galleries/merge-search")
+async def gallery_merge_search(
     request: Request,
-    gallery_id: int,
+    q: str = Query(""),
+    exclude: int = Query(0),
     admin = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)):
-    gallery = await db.get(Gallery, gallery_id)
-    if not gallery:
-        raise HTTPException(status_code=404, detail="Gallery not found")
-    imports_dir = os.path.join(settings.UPLOAD_DIR, "imports")
+    results = []
+    if q.strip():
+        stmt = (
+            select(Gallery)
+            .where(Gallery.title.ilike(f"%{q}%"), Gallery.id != exclude)
+            .order_by(Gallery.title)
+            .limit(8)
+        )
+        results = await safe_execute_all(db, stmt)
+    return templates.TemplateResponse(
+        request, "admin/partials/merge_search_results.html",
+        {"request": request, "results": results},
+    )
 
-    def _scan_import_folders():
-        os.makedirs(imports_dir, exist_ok=True)
-        result = []
-        for entry in os.scandir(imports_dir):
-            if entry.is_dir():
-                image_count = sum(1 for root, _, files in os.walk(entry.path) for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')))
-                result.append({"name": entry.name, "image_count": image_count})
-        result.sort(key=lambda x: x["name"])
-        return result
-
-    folders = await asyncio.to_thread(_scan_import_folders)
-    context = {"request": request, "gallery": gallery, "folders": folders}
-    return templates.TemplateResponse(request, "admin/partials/import_folders.html", context)
-
-@gallery_router.get("/galleries/{gallery_id}/upload-find/{folder_name}")
-async def gallery_upload_find_folder(
+@gallery_router.post("/galleries/{gallery_id}/merge")
+async def gallery_merge(
     request: Request,
     gallery_id: int,
-    folder_name: str,
+    source_id: int = Form(...),
+    merge_metadata: Optional[str] = Form(None),
     admin = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)):
-    gallery = await db.get(Gallery, gallery_id)
-    if not gallery:
-        raise HTTPException(status_code=404, detail="Gallery not found")
-    folder_path = _imports_folder_path(folder_name)
-
-    def _scan_folder_images():
-        if not os.path.isdir(folder_path):
-            return None
-        found = []
-        for root, _, files in os.walk(folder_path):
-            for f in files:
-                if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif')) and not f.startswith("._"):
-                    rel_path = os.path.relpath(os.path.join(root, f), settings.UPLOAD_DIR)
-                    found.append(f"/{settings.UPLOAD_DIR}/{rel_path}")
-        found.sort(key=lambda x: [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', x)])
-        return found
-
-    images = await asyncio.to_thread(_scan_folder_images)
-    if images is None:
-        raise HTTPException(status_code=404, detail="Folder not found")
-    context = {"request": request,"gallery": gallery,"folder_name": folder_name,"images": images}
-    return templates.TemplateResponse(request, "admin/partials/import_folder_contents.html", context)
-
-@gallery_router.post("/galleries/{gallery_id}/import-folder")
-async def gallery_import_folder(
-    request: Request,
-    gallery_id: int,
-    folder_name: str = Form(...),
-    admin = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db)):
-    gallery = await db.get(Gallery, gallery_id)
-    if not gallery:
-        raise HTTPException(status_code=404, detail="Gallery not found")
-    folder_path = _imports_folder_path(folder_name)
-    if not await asyncio.to_thread(os.path.isdir, folder_path):
-        raise HTTPException(status_code=404, detail="Folder not found")
-    max_page_result = await db.execute(select(func.max(Page.page_number)).where(Page.gallery_id == gallery_id))
-    start_page = (max_page_result.scalar() or 0) + 1
-    try:
-        await zip_service.process_import_folder(folder_path, gallery, db, start_page)
-        await db.commit()
-    except Exception as e:
-        import logging
-        logging.error(f"Import Folder Error: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    return {"status": "success"}
+    await merge_service.merge_galleries(
+        db, gallery_id, source_id, merge_metadata=bool(merge_metadata)
+    )
+    return redirect_to(request, f"/admin/galleries/{gallery_id}/edit")
 
 @gallery_router.post("/galleries/{gallery_id}/pages/reorder")
 async def pages_reorder(
@@ -570,6 +514,7 @@ async def pages_reorder(
     for index, p in enumerate(pages, start=1):
         p.page_number = index
     await db.commit()
+    await manifest_service.write_manifest(db, gallery_id)
     return {"status": "success"}
 
 @gallery_router.delete("/pages/{page_id}")
@@ -670,5 +615,6 @@ async def remove_gallery_duplicates_route(
         p.page_number = index
     gallery.page_count = len(remaining_pages)
     await db.commit()
+    await manifest_service.write_manifest(db, gallery_id)
     await asyncio.to_thread(_remove_files, paths_to_remove)
     return Response(headers={"HX-Refresh": "true"})

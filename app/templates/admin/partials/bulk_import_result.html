@@ -1,0 +1,39 @@
+<div id="bulk-import-result">
+{% if status_data.status == "running" %}
+    <div class="mt-3 text-warning" hx-get="/admin/import/status" hx-trigger="every 2s" hx-target="#bulk-import-result" hx-swap="outerHTML">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Importing... converting images and creating galleries. This may take a while.
+    </div>
+{% elif status_data.status == "error" %}
+    <div class="alert alert-danger mt-3">
+        <h5 class="alert-heading"><i class="bi bi-x-circle"></i> Error During Bulk Import</h5>
+        <p class="mb-0">{{ status_data.error }}</p>
+    </div>
+{% elif status_data.status == "completed" %}
+    <div class="alert alert-info mt-3">
+        <h5 class="alert-heading"><i class="bi bi-check-circle"></i> Bulk Import Complete</h5>
+        <ul class="mb-0">
+            <li>Draft galleries created: <strong>{{ status_data.summary.imported_galleries }}</strong></li>
+            <li>Pages imported: <strong>{{ status_data.summary.imported_pages }}</strong></li>
+            <li>Loose images added to "misc": <strong>{{ status_data.summary.root_images_added }}</strong></li>
+            <li>Failed: <strong>{{ status_data.summary.failed | length }}</strong></li>
+        </ul>
+    </div>
+    {% if status_data.summary.failed %}
+    <div class="alert alert-danger mt-2">
+        <h6 class="alert-heading"><i class="bi bi-x-circle"></i> Failed</h6>
+        <ul class="mb-0">
+            {% for item in status_data.summary.failed %}<li><code>{{ item.folder }}</code>: {{ item.reason }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+{% endif %}
+{% if status_data.status != "running" %}
+    <button class="btn btn-info"
+            hx-get="/admin/import/scan"
+            hx-target="#bulk-import-result"
+            hx-swap="outerHTML">
+        <i class="bi bi-search"></i> Scan Import Folder
+    </button>
+{% endif %}
+</div>

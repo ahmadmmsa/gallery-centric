@@ -20,12 +20,5 @@
     </div>
 </div>
 
-{% include 'admin/partials/gallery_card.html' %}
-
-<!-- Pagination -->
-<div class="mt-4">
-    {% set pager_target = '#gallery-grid' %}
-    {% set pager_swap = 'innerHTML' %}
-    {% include 'partials/pagination.html' %}
-</div>
+{% include 'admin/partials/gallery_results.html' %}
 {% endblock %}

@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.models.gallery import Gallery, Page
 from app.config import settings
 from app.database import AsyncSessionLocal
+from app.services.manifest_service import MANIFEST_NAME
 
 STATUS_FILE = os.path.join(settings.UPLOAD_DIR, "maintenance_status.json")
 # 15 minutes buffer
@@ -53,6 +54,7 @@ async def run_cleanup(db: AsyncSession, execute: bool) -> dict:
         "deleted_orphaned_files": 0,
         "deleted_broken_page_records": 0,
         "updated_gallery_counts": 0,
+        "restorable_folders_skipped": 0,
     }
     
     galleries_dir = os.path.join(settings.UPLOAD_DIR, "galleries")
@@ -70,7 +72,7 @@ async def run_cleanup(db: AsyncSession, execute: bool) -> dict:
         if gallery.slug:
             valid_galleries.add(gallery.slug)
             
-    # 2. Scan uploads/galleries for directories that are not in valid_galleries
+    # 2. Scan media/galleries for directories that are not in valid_galleries
     def _scan_dirs():
         return os.listdir(galleries_dir)
     
@@ -86,8 +88,17 @@ async def run_cleanup(db: AsyncSession, execute: bool) -> dict:
             return True, (current_time - mtime) > TIME_BUFFER_SECONDS
             
         is_dir, is_old_enough = await asyncio.to_thread(_check_dir_and_age, folder_path)
-        
+
         if is_dir and folder_name not in valid_galleries and is_old_enough:
+            # A folder carrying a manifest is a restorable gallery (e.g. copied
+            # in from another installation awaiting "Restore Galleries"), not
+            # an orphan — never delete it.
+            has_manifest = await asyncio.to_thread(
+                os.path.exists, os.path.join(folder_path, MANIFEST_NAME)
+            )
+            if has_manifest:
+                summary["restorable_folders_skipped"] += 1
+                continue
             summary["deleted_gallery_folders"] += 1
             if execute:
                 try:
@@ -167,6 +178,8 @@ async def run_cleanup(db: AsyncSession, execute: bool) -> dict:
             to_remove = []
             for root_dir, _, files in os.walk(g_dir):
                 for file_name in files:
+                    if file_name == MANIFEST_NAME:
+                        continue
                     file_path = os.path.join(root_dir, file_name)
                     file_path_clean = file_path.replace('\\', '/')
                     if file_path_clean not in v_files:

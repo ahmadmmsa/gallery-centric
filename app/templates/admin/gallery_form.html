@@ -19,6 +19,9 @@
                         formaction="/admin/galleries/{{ gallery.id }}/unpublish">
                         <i class="bi bi-eye-slash"></i> Unpublish
                     </button>
+                    <a href="/gallery/{{ gallery.slug }}" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-eye"></i> View
+                    </a>                    
                     {% else %}
                     <button type="submit" class="btn btn-success" formmethod="post"
                         formaction="/admin/galleries/{{ gallery.id }}/publish">
@@ -50,7 +53,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Language</label>
-                            <select name="language_id" class="form-select text-light">
+                            <select name="language_id" class="form-select text-light bg-dark tag-type-select">
                                 <option value="">Select Language</option>
                                 {% for lang in languages %}
                                 <option value="{{ lang.id }}" {% if gallery and gallery.language_id==lang.id
@@ -146,6 +149,69 @@
                             <dt class="col-sm-5">Created:</dt>
                             <dd class="col-sm-7">{{ gallery.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
                         </dl>
+                    </div>
+                </div>
+
+                <!-- Merge Gallery -->
+                <div class="card mt-4">
+                    <div>
+                        <h5>Merge Gallery</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">
+                            Append another gallery's pages after this one's last page. Tags and artists can be
+                            merged too. The source gallery is <strong>deleted</strong> afterwards.
+                        </p>
+                        <div class="position-relative">
+                            <input type="text" id="merge-search" class="form-control text-light border-secondary"
+                                placeholder="Search for the gallery to merge in..."
+                                hx-get="/admin/galleries/merge-search"
+                                hx-trigger="input changed delay:300ms"
+                                hx-vals='{"exclude": "{{ gallery.id }}"}'
+                                hx-target="#merge-results"
+                                hx-swap="innerHTML"
+                                name="q"
+                                autocomplete="off"
+                                onblur="setTimeout(() => { document.getElementById('merge-results').innerHTML = '' }, 200)">
+                            <div id="merge-results" class="position-absolute w-100 z-3 mt-1"></div>
+                        </div>
+                        <div id="merge-confirm" class="d-none mt-3">
+                            <div class="alert alert-warning mb-2">
+                                Merge <strong id="merge-source-title"></strong>
+                                (<span id="merge-source-pages"></span> pages) into this gallery?
+                                The source gallery will be <strong>deleted</strong>.
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="merge-metadata-check" checked>
+                                <label class="form-check-label" for="merge-metadata-check">
+                                    Also merge metadata (tags, artists, characters, parodies)
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-danger"
+                                hx-post="/admin/galleries/{{ gallery.id }}/merge"
+                                hx-vals='js:{"source_id": window._mergeSourceId, "merge_metadata": document.getElementById("merge-metadata-check").checked ? "1" : ""}'
+                                hx-disabled-elt="this">
+                                <i class="bi bi-sign-merge-left"></i> Merge
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="cancelMergeSource()">
+                                Cancel
+                            </button>
+                        </div>
+                        <script>
+                            function selectMergeSource(id, title, pages) {
+                                window._mergeSourceId = id;
+                                document.getElementById('merge-source-title').textContent = title;
+                                document.getElementById('merge-source-pages').textContent = pages;
+                                document.getElementById('merge-search').value = title;
+                                document.getElementById('merge-results').innerHTML = '';
+                                document.getElementById('merge-confirm').classList.remove('d-none');
+                            }
+                            function cancelMergeSource() {
+                                window._mergeSourceId = null;
+                                document.getElementById('merge-search').value = '';
+                                document.getElementById('merge-confirm').classList.add('d-none');
+                            }
+                        </script>
                     </div>
                 </div>
                 {% endif %}

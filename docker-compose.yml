@@ -1,21 +1,38 @@
 services:
+  # Generates data/db_password on first boot (idempotent, then exits). The
+  # password is alphanumeric so it is safe to embed in a database URL, and the
+  # file is chmod 600. Both the app and PostgreSQL read this same file — no
+  # .env needed.
+  db-init:
+    image: alpine:3.20
+    container_name: gallery_centric_db_init
+    command: >
+      sh -c 'test -s /data/db_password ||
+             (umask 077 &&
+              tr -dc A-Za-z0-9 < /dev/urandom | head -c 48 > /data/db_password &&
+              echo "[db-init] Generated new database password in data/db_password")'
+    volumes:
+      - ./data:/data
+    restart: "no"
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: gallery_centric_app
     depends_on:
+      db-init:
+        condition: service_completed_successfully
       gallerydb:
         condition: service_healthy
-    env_file:
-      - .env
     ports:
       - "8008:8008"
     volumes:
       - ./app:/app/app
-      - ./uploads:/app/uploads
+      - ./media:/app/media
       - ./migrations:/app/migrations
       - ./alembic.ini:/app/alembic.ini
+      - ./data:/app/data:ro
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8008/docs')" ]
       interval: 30s
@@ -30,14 +47,18 @@ services:
     image: pgvector/pgvector:pg18
     container_name: gallery_centric_db
     restart: unless-stopped
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: gallery
+      POSTGRES_DB: gallery
+      POSTGRES_PASSWORD_FILE: /run/gallery/db_password
     volumes:
       - pgdata:/var/lib/postgresql
+      - ./data:/run/gallery:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U gallery -d gallery"]
       interval: 5s
       timeout: 5s
       retries: 30

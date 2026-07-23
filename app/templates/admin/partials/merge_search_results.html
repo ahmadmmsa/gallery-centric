@@ -1,0 +1,15 @@
+<div class="list-group shadow">
+    {% for g in results %}
+    <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick='selectMergeSource({{ g.id }}, {{ g.title | tojson }}, {{ g.page_count or 0 }})'>
+        {% if g.thumbnail_path %}
+        <img src="{{ g.thumbnail_path }}" alt="" style="width:32px;height:44px;object-fit:cover" class="rounded">
+        {% endif %}
+        <span class="flex-grow-1 text-start">{{ g.title }}</span>
+        <span class="badge bg-secondary">{{ g.page_count or 0 }} pages</span>
+        {% if g.is_published %}<span class="badge bg-success">published</span>{% endif %}
+    </button>
+    {% else %}
+    <div class="list-group-item text-secondary">No matching galleries.</div>
+    {% endfor %}
+</div>

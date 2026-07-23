@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Request, Depends, Query, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, case
+from sqlalchemy import select, case, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
@@ -343,34 +343,44 @@ async def taxonomy_search(
     request: Request,
     q: str = Query(""),
     type: str = Query("tag"),
-    tag_type: Optional[str] = Query(None),
     admin = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),):
     config = MODEL_MAP.get(type)
     if not config or not q.strip():
-        return templates.TemplateResponse(request,"admin/components/tag_results.html",{"request": request,"results": [],"query": q,"type": type,"tag_type": tag_type})
+        return templates.TemplateResponse(request,"admin/components/tag_results.html",{"request": request,"results": [],"query": q,"type": type})
     model = config["model"]
-    
-    if type == "tag" and tag_type:
-        search_q = f"{tag_type}:{q}"
-        stmt = select(model).where(model.name.ilike(f"{search_q}%")).order_by(case((model.name.ilike(search_q), 0), else_=1),model.name).limit(8)
-    else:
-        stmt = select(model).where(model.name.ilike(f"{q}%")).order_by(case((model.name.ilike(q), 0), else_=1),model.name).limit(8)
-        
+    # Tags are stored as "tagtype:tagname", so match the typed text against
+    # either the full name ("misc:act...") or the base name after the colon
+    # ("act..." finds "misc:action"). Non-tag names have no colon, where the
+    # second pattern simply never matches.
+    stmt = (
+        select(model)
+        .where(or_(model.name.ilike(f"{q}%"), model.name.ilike(f"%:{q}%")))
+        .order_by(
+            case(
+                (model.name.ilike(q), 0),
+                (model.name.ilike(f"%:{q}"), 0),
+                else_=1,
+            ),
+            model.name,
+        )
+        .limit(8)
+    )
     results = (await db.execute(stmt)).scalars().all()
     return templates.TemplateResponse(request,"admin/components/tag_results.html",
-    {"request": request,"results": results,"query": q,"type": type,"tag_type": tag_type})
+    {"request": request,"results": results,"query": q,"type": type})
 
 @taxonomy_router.post("/taxonomy/create")
-async def taxonomy_create(request: Request,name: str = Form(...),type: str = Form(...),tag_type: Optional[str] = Form(None),admin = Depends(get_admin_user),db: AsyncSession = Depends(get_db),):
+async def taxonomy_create(request: Request,name: str = Form(...),type: str = Form(...),admin = Depends(get_admin_user),db: AsyncSession = Depends(get_db),):
     config = MODEL_MAP.get(type)
     if not config:
         return templates.TemplateResponse(request, "admin/components/error_chip.html", {"request": request, "msg": "Invalid taxonomy type"})
     model = config["model"]
     if model == Tag:
+        # "tagtype:tagname" carries the type; a bare name falls back to misc.
         parts = name.split(":")
         base_name = parts[-1].strip()
-        type_name = parts[0].strip() if len(parts) > 1 else (tag_type or "misc")
+        type_name = parts[0].strip() if len(parts) > 1 else "misc"
         tag_type = await _resolve_tag_type(db, type_name, fallback_to_misc=True)
         full_name = f"{tag_type.name}:{base_name}"
         obj = Tag(

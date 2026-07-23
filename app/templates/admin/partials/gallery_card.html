@@ -14,20 +14,7 @@
                                 {{ gallery.title }}
                             </a>
                         </h6>
-                        <div class="d-flex gap-1 flex-shrink-0">
-                            {% if gallery.is_published %}
-                                <span class="badge bg-success text-white fs-xxs">
-                                    <i class="bi bi-check-circle me-1"></i>Published
-                                </span>
-                                <a href="/gallery/{{ gallery.slug }}" target="_blank" class="badge bg-secondary text-white text-decoration-none" title="View Live">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                            {% else %}
-                                <span class="badge bg-warning text-dark fs-xxs">
-                                    <i class="bi bi-exclamation-circle me-1"></i>Draft
-                                </span>
-                            {% endif %}
-                        </div>
+                        {% include 'admin/partials/publish_toggle.html' %}
                     </div>
                     <div class="text-secondary mb-2 fs-xs">
                         {% if gallery.language %}
